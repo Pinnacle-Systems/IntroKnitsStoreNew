@@ -96,6 +96,8 @@ export default function StockReport() {
     [paginated, groupKeys, groupDirs],
   );
 
+  console.log(tree,"tree")
+
   // ── metrics ────────────────────────────────────────────────────────────────
   const metrics = useMemo(
     () => ({

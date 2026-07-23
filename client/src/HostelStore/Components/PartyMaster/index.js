@@ -126,6 +126,9 @@ export default function Form({
   const [branchId, setBranchId] = useState("");
   const [branchTypeId, setBranchTypeId] = useState("");
 
+  const [inHouse, setInhouse] = useState(false)
+  const [outside, setOutside] = useState(false)
+
   const childRecord = useRef(0);
   const dispatch = useDispatch();
 
@@ -236,6 +239,8 @@ export default function Form({
       setParentId(data?.parentId ? data?.parentId : "");
       setBranchTypeId(data?.branchTypeId ? data?.branchTypeId : "");
       setIsBranch(data?.isBranch ? data?.isBranch : "");
+      setInhouse(data?.inhouse ? data?.inhouse : false)
+      setOutside(data?.outside ? data?.outside : false)
     },
     [id],
   );
@@ -303,6 +308,8 @@ export default function Form({
       // setParentId(data?.parentId ? data?.parentId : "")
       // childRecord.current = data?.childRecord ? data?.childRecord : 0;
       setAadharNo(data?.aadharNo ? data?.aadharNo : "");
+      setInhouse(data?.inhouse ? data?.inhouse : false)
+      setOutside(data?.outside ? data?.outside : false)
     },
     [parentId],
   );
@@ -365,7 +372,14 @@ export default function Form({
     branchTypeId,
     aadharNo,
     city,
+    outside,
+    inHouse
   };
+
+  console.log({
+    outside,
+    inHouse
+  })
 
   const validateData = (data) => {
     let newErrors = {};
@@ -558,7 +572,9 @@ export default function Form({
     if (!isCustomer && !isSupplier) {
       return showAlert("Select Customer or Supplier");
     }
-
+    if (!inHouse && !outside) {
+      return showAlert("Select Production Type ");
+    }
     // Duplicate check
     let foundItem;
 
@@ -827,6 +843,17 @@ export default function Form({
     }
   };
 
+  const production = (value) => {
+    console.log(value,"value")
+    setInhouse(value == "IN")
+    setOutside(value == "OUT")
+  }
+
+  console.log({
+    inHouse,
+    outside
+  })
+
   if (partyId) {
     return (
       <>
@@ -978,22 +1005,52 @@ export default function Form({
                         </label>
                       </div>
                     </div>
+                    <div className="col-span-2 mb-2 flex items-center gap-2">
+                      <label className="text-xs font-bold text-gray-600 whitespace-nowrap">
+                        Production Type
+                      </label>
 
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="productionType"
+                          checked={inHouse}
+                          onChange={() => production("IN")}
+                          disabled={readOnly}
+                        />
+                        <span className="text-xs font-bold text-gray-600">
+                          In-House
+                        </span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="productionType"
+                          checked={outside}
+                          onChange={() => production("OUT")}
+                          disabled={readOnly}
+                        />
+                        <span className="text-xs font-bold text-gray-600">
+                          Outside
+                        </span>
+                      </label>
+                    </div>
                     <div className="col-span-2">
                       <DropdownInputNew
                         name="Customer/supplier"
                         options={dropDownListObject(
                           id
                             ? allData?.data?.filter(
-                                (i) => i.id != id && !i.parentId && i.gstNo,
-                              )
+                              (i) => i.id != id && !i.parentId && i.gstNo,
+                            )
                             : allData?.data?.filter(
-                                (item) =>
-                                  item.active &&
-                                  item.id != id &&
-                                  !item.parentId &&
-                                  item.gstNo,
-                              ),
+                              (item) =>
+                                item.active &&
+                                item.id != id &&
+                                !item.parentId &&
+                                item.gstNo,
+                            ),
                           "name",
                           "id",
                         )}
@@ -1015,8 +1072,8 @@ export default function Form({
                           id
                             ? branchTypeData?.data
                             : branchTypeData?.data?.filter(
-                                (item) => item.active,
-                              ),
+                              (item) => item.active,
+                            ),
                           "name",
                           "id" || [],
                         )}
@@ -1353,9 +1410,8 @@ export default function Form({
                           {attachments?.map((item, index) => (
                             <tr
                               key={index}
-                              className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${
-                                index % 2 === 0 ? "bg-white" : "bg-gray-100"
-                              }`}
+                              className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${index % 2 === 0 ? "bg-white" : "bg-gray-100"
+                                }`}
                             >
                               <td className="border-r border-white/50 center h-8 text-center ">
                                 {index + 1}
@@ -1576,22 +1632,52 @@ export default function Form({
                   </label>
                 </div>
               </div>
+              <div className="col-span-2 mb-2 flex items-center gap-2">
+                <label className="text-xs font-bold text-gray-600 whitespace-nowrap">
+                  Production Type
+                </label>
 
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="productionType"
+                    checked={inHouse}
+                    onChange={() => production("IN")}
+                    disabled={readOnly}
+                  />
+                  <span className="text-xs font-bold text-gray-600">
+                    In-House
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="productionType"
+                    checked={outside}
+                    onChange={() => production("OUT")}
+                    disabled={readOnly}
+                  />
+                  <span className="text-xs font-bold text-gray-600">
+                    Outside
+                  </span>
+                </label>
+              </div>
               <div className="col-span-2">
                 <DropdownInputNew
                   name="Customer/supplier"
                   options={dropDownListObject(
                     id
                       ? allData?.data?.filter(
-                          (i) => i.id != id && !i.parentId && i.gstNo,
-                        )
+                        (i) => i.id != id && !i.parentId && i.gstNo,
+                      )
                       : allData?.data?.filter(
-                          (item) =>
-                            item.active &&
-                            item.id != id &&
-                            !item.parentId &&
-                            item.gstNo,
-                        ),
+                        (item) =>
+                          item.active &&
+                          item.id != id &&
+                          !item.parentId &&
+                          item.gstNo,
+                      ),
                     "name",
                     "id",
                   )}
@@ -2140,9 +2226,8 @@ export default function Form({
                     {attachments?.map((item, index) => (
                       <tr
                         key={index}
-                        className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-100"
-                        }`}
+                        className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${index % 2 === 0 ? "bg-white" : "bg-gray-100"
+                          }`}
                       >
                         <td className="border-r border-white/50 center h-8 text-center ">
                           {index + 1}
@@ -2423,11 +2508,10 @@ export default function Form({
                     setView("all");
                     setReportName("Customer/Supplier Name");
                   }}
-                  className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${
-                    view === "all"
-                      ? "bg-indigo-100 text-indigo-600"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${view === "all"
+                    ? "bg-indigo-100 text-indigo-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                    }`}
                 >
                   <Table size={16} />
                   All
@@ -2437,11 +2521,10 @@ export default function Form({
                     setView("Customer");
                     setReportName("Customer Name");
                   }}
-                  className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${
-                    view === "Customer"
-                      ? "bg-indigo-100 text-indigo-600"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${view === "Customer"
+                    ? "bg-indigo-100 text-indigo-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                    }`}
                 >
                   <Table size={16} />
                   Customer
@@ -2451,11 +2534,10 @@ export default function Form({
                     setView("Supplier");
                     setReportName("Supplier Name");
                   }}
-                  className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${
-                    view === "Supplier"
-                      ? "bg-indigo-100 text-indigo-600"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${view === "Supplier"
+                    ? "bg-indigo-100 text-indigo-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                    }`}
                 >
                   <LayoutGrid size={16} />
                   Supplier

@@ -131,6 +131,8 @@ model Branch {
   productionInwards     ProductionInward[]
   processBills          ProcessBill[]
   salesDeliveries       SalesDelivery[]
+  MaterialIssue         MaterialIssue[]
+  MaterialReturn        MaterialReturn[]
 }
 
 model UserOnBranch {
@@ -231,8 +233,12 @@ model User {
   productionemplog         productionempPunch[]
   salesDeliveriesCreatedBy SalesDelivery[]      @relation(name: "createdBy")
   salesDeliveriesUpdatedBy SalesDelivery[]      @relation(name: "updatedBy")
-  ItemSubGroupCreatedBy     ItemSubGroup[]      @relation(name: "createdBy")
-  ItemSubGroupUpdatedBy     ItemSubGroup[]      @relation(name: "updatedBy")
+  ItemSubGroupCreatedBy    ItemSubGroup[]       @relation(name: "createdBy")
+  ItemSubGroupUpdatedBy    ItemSubGroup[]       @relation(name: "updatedBy")
+  MaterialIssueCreatedBy   MaterialIssue[]      @relation(name: "createdBy")
+  MaterialIssueUpdatedBy   MaterialIssue[]      @relation(name: "updatedBy")
+  MaterialReturnCreatedBy  MaterialReturn[]     @relation(name: "createdBy")
+  MaterialReturnUpdatedBy  MaterialReturn[]     @relation(name: "updatedBy")
 }
 
 model Employee {
@@ -477,6 +483,8 @@ model Party {
   parentId              String?
   BranchType            BranchType?            @relation(fields: [branchTypeId], references: [id])
   branchTypeId          Int?
+  inhouse               Boolean?               @default(false)
+  outside               Boolean?               @default(false)
   Payment               Payment[]
   Supplier              DeliveryChallan[]      @relation(name: "supplier")
   DeliveryTo            DeliveryChallan[]      @relation(name: "deliveryTo")
@@ -501,6 +509,8 @@ model Party {
   productionInwards        ProductionInward[]
   processBills             ProcessBill[]
   salesDeliveries          SalesDelivery[]
+  MaterialIssue            MaterialIssue[]
+  MaterialReturn           MaterialReturn[]
 }
 
 model PartyBranch {
@@ -633,6 +643,8 @@ model Uom {
   orderItems             OrderItems[]
   proformaInvoiceItems   ProformaInvoiceItem[]
   salesDeliveryItems     SalesDeliveryItems[]
+  MaterialIssueItems     MaterialIssueItems[]
+  MaterialReturnItems    MaterialReturnItems[]
 }
 
 model ProductUomPriceDetails {
@@ -806,6 +818,12 @@ model Stock {
   gsmId                 Int?
   JobCard               JobCard?             @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
   jobCardId             Int?
+  Item                  Item?                @relation(fields: [itemId], references: [id])
+  itemId                Int?
+  materialIssueItemsId  Int?
+  MaterialIssueItems    MaterialIssueItems?  @relation(fields: [materialIssueItemsId], references: [id], onDelete: Cascade)
+  materialReturnItemsId Int?
+  MaterialReturnItems   MaterialReturnItems? @relation(fields: [materialReturnItemsId], references: [id], onDelete: Cascade)
 }
 
 model SalesBill {
@@ -970,7 +988,7 @@ model StyleItem {
   sizeTemplateId         Int?
   ItemGroup              ItemGroup?               @relation(fields: [itemGroupId], references: [id])
   itemGroupId            Int?
-  ItemSubGroup           ItemSubGroup?               @relation(fields: [itemSubGroupId], references: [id])
+  ItemSubGroup           ItemSubGroup?            @relation(fields: [itemSubGroupId], references: [id])
   itemSubGroupId         Int?
   Uom                    Uom?                     @relation(fields: [uomId], references: [id])
   uomId                  Int?
@@ -1057,6 +1075,8 @@ model Color {
   inwardItems            InwardItems[]
   stocks                 Stock[]
   JobCards               JobCard[]
+  MaterialIssueItems     MaterialIssueItems[]
+  MaterialReturnItems    MaterialReturnItems[]
 }
 
 model DeliveryInvoice {
@@ -1209,6 +1229,9 @@ model Hsn {
   proformaInvoiceItems   ProformaInvoiceItem[]
   orderItems             OrderItems[]
   salesDeliveryItems     SalesDeliveryItems[]
+  Item                   Item[]
+  MaterialIssueItems     MaterialIssueItems[]
+  MaterialReturnItems    MaterialReturnItems[]
 }
 
 model BranchType {
@@ -1414,6 +1437,8 @@ model InwardItems {
   taxPercent       Float?
   Gsm              Gsm?            @relation(fields: [gsmId], references: [id])
   gsmId            Int?
+  Item             Item?           @relation(fields: [itemId], references: [id])
+  itemId           Int?
 }
 
 model Location {
@@ -1433,6 +1458,8 @@ model Location {
   purchaseInwardReturns PurchaseInwardReturn[]
   purchaseCancels       PurchaseCancel[]
   jobCards              JobCard[]
+  MaterialIssue         MaterialIssue[]
+  MaterialReturn        MaterialReturn[]
 }
 
 model PurchaseInwardReturn {
@@ -1492,6 +1519,8 @@ model PurchaseReturnItems {
   Po                     Po?                   @relation(fields: [poId], references: [id], onDelete: Cascade)
   poId                   Int?
   stocks                 Stock[]
+  Item                   Item?                 @relation(fields: [itemId], references: [id])
+  itemId                 Int?
 }
 
 model PurchaseCancel {
@@ -1648,8 +1677,9 @@ model Size {
   Machine                Machine[]
   jobCardLabelSize       JobCard[]                @relation("labelSize")
   boardQualities         BoardQuality[]
-
-  salesSizeBreakups SalesSizeBreakup[]
+  salesSizeBreakups      SalesSizeBreakup[]
+  MaterialIssueItems     MaterialIssueItems[]
+  MaterialReturnItems    MaterialReturnItems[]
 }
 
 model Gsm {
@@ -1673,6 +1703,22 @@ model Gsm {
   jobCards JobCard[]
 }
 
+model Item {
+  id                  Int                   @id @default(autoincrement())
+  name                String?
+  aliasName           String?
+  ItemGroup           ItemGroup?            @relation(fields: [itemGroupId], references: [id], onDelete: Cascade)
+  itemGroupId         Int?
+  Hsn                 Hsn?                  @relation(fields: [hsnId], references: [id], onDelete: Cascade)
+  hsnId               Int?
+  InwardItems         InwardItems[]
+  PurchaseReturnItems PurchaseReturnItems[]
+  Stock               Stock[]
+  active              Boolean?              @default(false)
+  MaterialIssueItems  MaterialIssueItems[]
+  MaterialReturnItems MaterialReturnItems[]
+}
+
 model ItemGroup {
   id                     Int                      @id @default(autoincrement())
   name                   String
@@ -1689,7 +1735,10 @@ model ItemGroup {
   stocks                 Stock[]
   orderItems             OrderItems[]
   jobCards               JobCard[]
-  ItemSubGroup          ItemSubGroup[]
+  ItemSubGroup           ItemSubGroup[]
+  Item                   Item[]
+  MaterialIssueItems     MaterialIssueItems[]
+  MaterialReturnItems    MaterialReturnItems[]
 }
 
 model SizeTemplate {
@@ -2147,31 +2196,31 @@ model MachineDetails {
 }
 
 model OrderItems {
-  id             Int                @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   orderEntryId   Int?
-  OrderEntry     OrderEntry?        @relation(fields: [orderEntryId], references: [id], onDelete: Cascade)
+  OrderEntry     OrderEntry?   @relation(fields: [orderEntryId], references: [id], onDelete: Cascade)
   styleItemId    Int?
-  StyleItem      StyleItem?         @relation(fields: [styleItemId], references: [id])
+  StyleItem      StyleItem?    @relation(fields: [styleItemId], references: [id])
   orderQty       Int?
   sizeId         Int?
-  Size           Size?              @relation(fields: [sizeId], references: [id])
+  Size           Size?         @relation(fields: [sizeId], references: [id])
   uomId          Int?
-  Uom            Uom?               @relation(fields: [uomId], references: [id])
+  Uom            Uom?          @relation(fields: [uomId], references: [id])
   gsmId          Int?
-  Gsm            Gsm?               @relation(fields: [gsmId], references: [id])
+  Gsm            Gsm?          @relation(fields: [gsmId], references: [id])
   itemGroupId    Int?
-  ItemGroup      ItemGroup?         @relation(fields: [itemGroupId], references: [id])
+  ItemGroup      ItemGroup?    @relation(fields: [itemGroupId], references: [id])
   hsnId          Int?
-  Hsn            Hsn?               @relation(fields: [hsnId], references: [id])
+  Hsn            Hsn?          @relation(fields: [hsnId], references: [id])
   sizeTemplateId Int?
-  SizeTemplate   SizeTemplate?      @relation(fields: [sizeTemplateId], references: [id])
-  
+  SizeTemplate   SizeTemplate? @relation(fields: [sizeTemplateId], references: [id])
+
   trackingType   String?
   sizeBreakup    OrderSizeBreakup[]
-  jobCards JobCard[]
-  itemSubGroupId            Int?
-  ItemSubGroup              ItemSubGroup?               @relation(fields: [itemSubGroupId], references: [id])
-  labelWidth    String?
+  jobCards       JobCard[]
+  itemSubGroupId Int?
+  ItemSubGroup   ItemSubGroup?      @relation(fields: [itemSubGroupId], references: [id])
+  labelWidth     String?
 }
 
 model OrderSizeBreakup {
@@ -2668,21 +2717,109 @@ model SalesSizeBreakup {
   qty                 Int?
 }
 
-
 model ItemSubGroup {
-  id                     Int                      @id @default(autoincrement())
-  name                   String
-  active                 Boolean                  @default(true)
-  Company                Company?                 @relation(fields: [companyId], references: [id])
-  companyId              Int?
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  createdById            Int?
-  createdBy              User?                    @relation("createdBy", fields: [createdById], references: [id])
-  updatedById            Int?
-  updatedBy              User?                    @relation("updatedBy", fields: [updatedById], references: [id])
-  itemGroupId            Int
-  ItemGroup              ItemGroup                @relation(fields: [itemGroupId], references: [id], onDelete: Cascade)
-  StyleItem               StyleItem[]
-  OrderItems              OrderItems[]
+  id          Int          @id @default(autoincrement())
+  name        String
+  active      Boolean      @default(true)
+  Company     Company?     @relation(fields: [companyId], references: [id])
+  companyId   Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  createdById Int?
+  createdBy   User?        @relation("createdBy", fields: [createdById], references: [id])
+  updatedById Int?
+  updatedBy   User?        @relation("updatedBy", fields: [updatedById], references: [id])
+  itemGroupId Int
+  ItemGroup   ItemGroup    @relation(fields: [itemGroupId], references: [id], onDelete: Cascade)
+  StyleItem   StyleItem[]
+  OrderItems  OrderItems[]
+}
+
+model MaterialIssue {
+  id                  Int                   @id @default(autoincrement())
+  docId               String
+  docDate             DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           User?                 @relation("createdBy", fields: [createdById], references: [id])
+  createdById         Int?
+  updatedBy           User?                 @relation("updatedBy", fields: [updatedById], references: [id])
+  updatedById         Int?
+  Branch              Branch?               @relation(fields: [branchId], references: [id])
+  branchId            Int?
+  supplier            Party?                @relation(fields: [supplierId], references: [id])
+  supplierId          Int?
+  Location            Location?             @relation(fields: [locationId], references: [id])
+  locationId          Int?
+  productionType      String?
+  MaterialIssueItems  MaterialIssueItems[]
+  MaterialReturn      MaterialReturn[]
+  MaterialReturnItems MaterialReturnItems[]
+}
+
+model MaterialIssueItems {
+  id                  Int                   @id @default(autoincrement())
+  MaterialIssue       MaterialIssue?        @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
+  materialIssueId     Int?
+  Itemgroup           ItemGroup?            @relation(fields: [itemGroupId], references: [id])
+  itemGroupId         Int?
+  Item                Item?                 @relation(fields: [itemId], references: [id])
+  itemId              Int?
+  Size                Size?                 @relation(fields: [sizeId], references: [id])
+  sizeId              Int?
+  Color               Color?                @relation(fields: [colorId], references: [id])
+  colorId             Int?
+  Uom                 Uom?                  @relation(fields: [uomId], references: [id])
+  uomId               Int?
+  Hsn                 Hsn?                  @relation(fields: [hsnId], references: [id])
+  hsnId               Int?
+  issueQty            String?
+  Stock               Stock[]
+  MaterialReturnItems MaterialReturnItems[]
+}
+
+model MaterialReturn {
+  id                  Int                   @id @default(autoincrement())
+  docId               String
+  docDate             DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  createdBy           User?                 @relation("createdBy", fields: [createdById], references: [id])
+  createdById         Int?
+  updatedBy           User?                 @relation("updatedBy", fields: [updatedById], references: [id])
+  updatedById         Int?
+  Branch              Branch?               @relation(fields: [branchId], references: [id])
+  branchId            Int?
+  supplier            Party?                @relation(fields: [supplierId], references: [id])
+  supplierId          Int?
+  Location            Location?             @relation(fields: [locationId], references: [id])
+  locationId          Int?
+  productionType      String?
+  MaterialIssue       MaterialIssue?        @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
+  materialIssueId     Int?
+  MaterialReturnItems MaterialReturnItems[]
+}
+
+model MaterialReturnItems {
+  id                   Int                 @id @default(autoincrement())
+  MaterialReturn       MaterialReturn?     @relation(fields: [materialReturnId], references: [id], onDelete: Cascade)
+  materialReturnId     Int?
+  Itemgroup            ItemGroup?          @relation(fields: [itemGroupId], references: [id])
+  itemGroupId          Int?
+  Item                 Item?               @relation(fields: [itemId], references: [id])
+  itemId               Int?
+  Size                 Size?               @relation(fields: [sizeId], references: [id])
+  sizeId               Int?
+  Color                Color?              @relation(fields: [colorId], references: [id])
+  colorId              Int?
+  Uom                  Uom?                @relation(fields: [uomId], references: [id])
+  uomId                Int?
+  Hsn                  Hsn?                @relation(fields: [hsnId], references: [id])
+  hsnId                Int?
+  returnQty            String?
+  MaterialIssue        MaterialIssue?      @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
+  materialIssueId      Int?
+  MaterialIssueItems   MaterialIssueItems? @relation(fields: [materialIssueItemsId], references: [id], onDelete: Cascade)
+  materialIssueItemsId Int?
+  Stock                Stock[]
 }

@@ -10,6 +10,7 @@ import {
   getPcsStock,
   getStock,
   getBoardQty,
+  getStockforMaterialIssue,
 } from "../controllers/stock.controller.js";
 
 router.post("/", create);
@@ -20,6 +21,9 @@ router.get("/", get);
 
 router.get("/getBoardQty", getBoardQty);
 
+router.get("/getStockforMaterialIssue", getStockforMaterialIssue);
+
+
 router.get("/getStockReport", getStock);
 
 router.get("/:id", getOne);
@@ -29,5 +33,7 @@ router.get("/search/:searchKey", getSearch);
 router.put("/:id", update);
 
 router.delete("/:id", remove);
+
+
 
 export default router;

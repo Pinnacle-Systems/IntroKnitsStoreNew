@@ -32,6 +32,7 @@ import { useFormKeyboardNavigation } from "../../../CustomHooks/useFormKeyboardN
 import { useGetGsmMasterQuery } from "../../../redux/services/GsmMasterService";
 import { UserPermissions } from "../../../Utils/UserPermissions";
 import { ItemSubGroupMaster } from "../../../Basic/components";
+import { useAddItemMasterMutation, useDeleteItemMasterMutation, useGetItemMasterByIdQuery, useGetItemMasterQuery, useUpdateItemMasterMutation } from "../../../redux/services/ItemMasterService";
 
 const MODEL = "Item Master";
 export default function Form({ onSuccess, defaultName = "" }) {
@@ -75,18 +76,18 @@ export default function Form({ onSuccess, defaultName = "" }) {
     data: allData,
     isLoading,
     isFetching,
-  } = useGetStyleItemMasterQuery({ params, searchParams: searchValue });
+  } = useGetItemMasterQuery({ params, searchParams: searchValue });
 
   const {
     data: singleData,
     isFetching: isSingleFetching,
     isLoading: isSingleLoading,
-  } = useGetStyleItemMasterByIdQuery(id, { skip: !id });
+  } = useGetItemMasterByIdQuery(id, { skip: !id });
   const [trigger, { data: LazyData }] = useLazyGetStyleItemMasterByIdQuery();
 
-  const [addData] = useAddStyleItemMasterMutation();
-  const [updateData] = useUpdateStyleItemMasterMutation();
-  const [removeData] = useDeleteStyleItemMasterMutation();
+  const [addData] = useAddItemMasterMutation();
+  const [updateData] = useUpdateItemMasterMutation();
+  const [removeData] = useDeleteItemMasterMutation();
 
   const { hasPermission } = UserPermissions();
   const handleCreate = () => {
@@ -133,7 +134,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
   };
 
   const validateData = (data) => {
-    if (data.name && data.itemGroupId && data?.uomId && data?.hsnId) {
+    if (data.name && data.itemGroupId  && data?.hsnId) {
       return true;
     }
     return false;
@@ -371,56 +372,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
                     disabled={childRecord.current > 0}
                   />
                 </div>
-                <div className="mb-3">
-                  {/* <DropdownInput
-                            name="Item Group"
-                            options={dropDownListObject(
-                              id
-                                ? itemGroupList?.data
-                                : itemGroupList?.data?.filter(
-                                    (item) => item.active,
-                                  ),
-                              "name",
-                              "id",
-                            )}
-                            value={itemGroupId}
-                            setValue={(value) => {
-                              setItemGroupId(value);
-                            }}
-                            readOnly={readOnly}
-                            disabled={childRecord.current > 0}
-                            clear={true}
-                            required={true}
-                          /> */}
-                  <DropdownWithModal
-                    name="Item Sub Group"
-                    options={dropDownListObject(
-                      id
-                        ? itemSubGroupList?.data
-                        : itemSubGroupList?.data?.filter(
-                            (item) => item?.active,
-                          ),
-                      "name",
-                      "id",
-                    )}
-                    value={itemSubGroupId}
-                    setValue={(val) => {
-                      setItemSubGroupId(val);
-                      const selectedSubGroup = itemSubGroupList?.data?.find(
-                        (item) => item.id === val,
-                      );
-                      if (selectedSubGroup && selectedSubGroup.itemGroupId) {
-                        setItemGroupId(selectedSubGroup.itemGroupId);
-                      }
-                    }}
-                    readOnly={readOnly}
-                    className={`w-[150px]`}
-                    // disabled={childRecord.current > 0}
-                    addNewLabel="+ Add New Item Sub Group"
-                    childComponent={ItemSubGroupMaster}
-                    addNewModalWidth="w-[40%] h-[45%]"
-                  />
-                </div>
+           
                 <DropdownWithModal
                   name="Item Group"
                   options={dropDownListObject(
@@ -464,86 +416,9 @@ export default function Form({ onSuccess, defaultName = "" }) {
                     required={true}
                   />
                 </div>
-                <div className="mb-3">
-                  {/* <DropdownInput
-                            name="UOM"
-                            options={dropDownListObject(
-                              id
-                                ? uomList?.data
-                                : uomList?.data?.filter((item) => item.active),
-                              "name",
-                              "id",
-                            )}
-                            value={uomId}
-                            setValue={(value) => {
-                              setUomId(value);
-                            }}
-                            required={true}
-                            disabled={childRecord.current > 0}
-                            readOnly={readOnly}
-                          /> */}
-                  <DropdownWithModal
-                    name="Uom"
-                    options={dropDownListObject(
-                      id
-                        ? uomList?.data
-                        : uomList?.data?.filter((item) => item?.active),
-                      "name",
-                      "id",
-                    )}
-                    value={uomId}
-                    setValue={setUomId}
-                    required={true}
-                    readOnly={readOnly}
-                    className={`w-[150px]`}
-                    disabled={childRecord.current > 0}
-                    addNewLabel="+ Add New Uom"
-                    childComponent={UomMaster}
-                    addNewModalWidth="w-[40%] h-[45%]"
-                  />
-                </div>
-                <div className="mb-3">
-                  <DropdownWithModal
-                    name="Size Template"
-                    options={dropDownListObject(
-                      id
-                        ? sizeTemplateList?.data
-                        : sizeTemplateList?.data?.filter(
-                            (item) => item?.active,
-                          ),
-                      "name",
-                      "id",
-                    )}
-                    value={sizeTemplateId}
-                    setValue={setSizeTemplateId}
-                    readOnly={readOnly}
-                    className={`w-[150px]`}
-                    disabled={childRecord.current > 0}
-                    addNewLabel="+ Add New Size Template"
-                    childComponent={SizeTemplate}
-                    addNewModalWidth="w-[40%] h-[62%]"
-                  />
-                </div>
-                <div className="mb-3">
-                  <DropdownWithModal
-                    name="GSM"
-                    options={dropDownListObject(
-                      id
-                        ? gsmList?.data
-                        : gsmList?.data?.filter((item) => item?.active),
-                      "name",
-                      "id",
-                    )}
-                    value={gsmId}
-                    setValue={setGsmId}
-                    readOnly={readOnly}
-                    className={`w-[150px]`}
-                    // disabled={childRecord.current > 0}
-                    addNewLabel="+ Add New Gsm"
-                    childComponent={Gsm}
-                    addNewModalWidth="w-[40%] h-[50%]"
-                  />
-                </div>
+   
+         
+            
                 <div className="mb-5">
                   <ToggleButton
                     name="Status"

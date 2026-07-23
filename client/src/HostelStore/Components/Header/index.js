@@ -2,7 +2,7 @@ import "./Header.css";
 import dp from "../../../assets/default-dp.png";
 import { Bell, Search } from "lucide-react";
 import Profile from "./Profile";
-import logo from "../../../assets/mplogo.png";
+import logo from "../../../assets/Iknitslogo.png";
 // import { useState } from "react"
 import { LogOut } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";

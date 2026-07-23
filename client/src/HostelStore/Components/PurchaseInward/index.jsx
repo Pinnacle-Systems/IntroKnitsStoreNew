@@ -17,6 +17,8 @@ import useInvalidateTags from "../../../CustomHooks/useInvalidateTags.js";
 import { useSelector } from "react-redux";
 import { useGetTaxTemplateQuery } from "../../../redux/services/TaxTemplateServices.js";
 import { useGetGsmMasterQuery } from "../../../redux/services/GsmMasterService.js";
+import { useGetItemMasterQuery } from "../../../redux/services/ItemMasterService.js";
+import { useGetItemGroupMasterQuery } from "../../../redux/services/ItemGroupMasterService.js";
 
 export default function Form() {
   const [showForm, setShowForm] = useState(false);
@@ -105,7 +107,9 @@ export default function Form() {
 
   const { data: supplierList } = useGetPartyQuery({ params: { ...params } });
   const { data: branchList } = useGetBranchQuery({ params: { ...params } });
-  const { data: styleItemList } = useGetStyleItemMasterQuery({ params: { ...params } });
+  const { data: styleItemList } = useGetItemMasterQuery({ params: { ...params } });
+  const { data: itemGroupList } = useGetItemGroupMasterQuery({ params: { ...params } });
+
   const { data: uomList } = useGetUnitOfMeasurementMasterQuery({ params });
   const { data: hsnList } =
     useGetHsnMasterQuery({ params });
@@ -177,7 +181,7 @@ export default function Form() {
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            itemsPerPage={10}
+            itemsPerPage={15}
           />
         </div>
       </div>
@@ -200,6 +204,7 @@ export default function Form() {
           branchList={branchList}
           uomList={uomList}
           styleItemList={styleItemList}
+          itemGroupList={itemGroupList}
           hsnList={hsnList}
           onNew={onNew}
           sizeList={sizeList}

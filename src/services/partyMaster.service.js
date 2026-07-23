@@ -95,6 +95,9 @@ async function get(req) {
       },
       BranchType: true,
     },
+    orderBy: {
+      id: "asc"
+    }
   });
 
   if (isParent) {
@@ -105,9 +108,8 @@ async function get(req) {
       ?.filter((i) => i.isCustomer)
       .map((i) => ({
         ...i,
-        name: `${i.name}${
-          i?.BranchType?.name ? ` / ${i.BranchType.name}` : ""
-        }${i?.City?.name ? ` / ${i.City.name}` : ""}`,
+        name: `${i.name}${i?.BranchType?.name ? ` / ${i.BranchType.name}` : ""
+          }${i?.City?.name ? ` / ${i.City.name}` : ""}`,
       }));
   }
   return {
@@ -191,13 +193,7 @@ export async function getNew(req) {
         return partySum + invoiceItemQty;
       }, 0);
 
-      console.log(
-        {
-          deliveryQty,
-          invoiceQty,
-        },
-        "invoiceQty",
-      );
+
 
       return deliveryQty > invoiceQty;
     });
@@ -280,7 +276,6 @@ async function getOne(id) {
     (sum, val) => sum + (val?.amount ?? 0),
     0,
   );
-  console.log(totalOpeningBalance, "openingBalancessssdddd");
 
   const totalPurchaseNetBillValue = data.PurchaseBillSupplier.reduce(
     (acc, bill) => acc + (bill.ourPrice || 0),
@@ -415,6 +410,8 @@ async function create(body) {
     branchTypeId,
     isBranch,
     aadharNo,
+    outside,
+    inHouse,
   } = await body;
 
   const data = await prisma.party.create({
@@ -428,6 +425,8 @@ async function create(body) {
       isCustomer: isCustomer ? JSON.parse(isCustomer) : false,
       isBranch: isBranch ? JSON.parse(isBranch) : false,
 
+      outside: outside ? JSON.parse(outside) : false,
+      inhouse: inHouse ? JSON.parse(inHouse) : false,
       cityId: cityId ? parseInt(cityId) : undefined,
       pincode: pincode ? parseInt(pincode) : undefined,
       panNo,
@@ -465,17 +464,18 @@ async function create(body) {
       branchTypeId: branchTypeId ? parseInt(branchTypeId) : undefined,
       parentId: parentId ? parentId : undefined,
       aadharNo,
+
       attachments:
         JSON.parse(attachments)?.length > 0
           ? {
-              createMany: {
-                data: JSON.parse(attachments).map((sub) => ({
-                  date: sub?.date ? new Date(sub?.date) : undefined,
-                  filePath: sub?.filePath ? sub?.filePath : undefined,
-                  name: sub?.name ? sub?.name : undefined,
-                })),
-              },
-            }
+            createMany: {
+              data: JSON.parse(attachments).map((sub) => ({
+                date: sub?.date ? new Date(sub?.date) : undefined,
+                filePath: sub?.filePath ? sub?.filePath : undefined,
+                name: sub?.name ? sub?.name : undefined,
+              })),
+            },
+          }
           : undefined,
     },
   });
@@ -528,6 +528,8 @@ async function update(id, body) {
     parentId,
     isBranch,
     aadharNo,
+    outside,
+    inHouse,
   } = await body;
 
   const parseAttachments = JSON.parse(attachments || "[]");
@@ -537,9 +539,9 @@ async function update(id, body) {
     ?.filter((i) => i.id)
     .map((i) => parseInt(i.id));
 
-  console.log(parseAttachments, "parseAttachments");
+  console.log(inHouse, "inHouse", outside, "outside");
 
-  console.log(incomingIds, "incomingIds");
+  // console.log(incomingIds, "incomingIds");
 
   const dataFound = await prisma.party.findUnique({
     where: {
@@ -559,22 +561,24 @@ async function update(id, body) {
       address,
       isSupplier: isSupplier ? JSON.parse(isSupplier) : false,
       isCustomer: isCustomer ? JSON.parse(isCustomer) : false,
-      cityId: cityId ? parseInt(cityId) : undefined,
-      pincode: pincode ? parseInt(pincode) : undefined,
+      outside: outside ? JSON.parse(outside) : false,
+      inhouse: inHouse ? JSON.parse(inHouse) : false,
+      cityId: cityId ? parseInt(cityId) : null,
+      pincode: pincode ? parseInt(pincode) : null,
       panNo,
       tinNo,
       cstNo,
-      cstDate: cstDate ? new Date(cstDate) : undefined,
+      cstDate: cstDate ? new Date(cstDate) : null,
       cinNo,
       faxNo,
       email,
       website,
       contactPersonName,
       gstNo,
-      createdById: userId ? parseInt(userId) : undefined,
+      createdById: userId ? parseInt(userId) : null,
       companyId: parseInt(companyId),
       active: active ? JSON.parse(active) : false,
-      contactMobile: contactMobile ? parseInt(contactMobile) : undefined,
+      contactMobile: contactMobile ? parseInt(contactMobile) : null,
       coa: coa ? parseInt(coa) : parseInt(0),
       soa: soa ? parseInt(soa) : parseInt(0),
       landMark: landMark ? landMark : "",
@@ -627,14 +631,7 @@ async function update(id, body) {
   return { statusCode: 0, data };
 }
 
-// async function remove(id) {
-//     const data = await prisma.party.delete({
-//         where: {
-//             id: parseInt(id)
-//         },
-//     })
-//     return { statusCode: 0, data };
-// }
+
 
 async function remove(id) {
   const data = await prisma.party.deleteMany({

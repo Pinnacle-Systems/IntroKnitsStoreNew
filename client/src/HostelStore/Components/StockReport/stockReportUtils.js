@@ -5,7 +5,7 @@
 // ── Column definitions ────────────────────────────────────────────────────────
 export const STOCK_COLUMNS = [
   { key: "store", label: "Location", w: "100px" },
-  { key: "styleItem", label: "Item Name", w: "150px" },
+  { key: "item", label: "Item Name", w: "150px" },
   { key: "itemGroup", label: "Item Group", w: "100px" },
   { key: "size", label: "Size", w: "70px" },
   { key: "color", label: "Color", w: "90px" },

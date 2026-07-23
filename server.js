@@ -76,6 +76,9 @@ import {
   processBill,
   salesDelivery,
   itemSubGroup,
+  item,
+  materialIssue,
+  materialReturn,
 } from "./src/routes/index.js";
 import { setIo } from "./src/utils/notificationHelper.js";
 import { socketMain } from "./src/sockets/socket.js";
@@ -184,6 +187,11 @@ app.use("/productionInward", productionInward);
 app.use("/processBill", processBill);
 app.use("/salesDelivery", salesDelivery);
 app.use("/itemSubGroup", itemSubGroup);
+app.use("/item", item);
+app.use("/materialIssue", materialIssue);
+app.use("/materialReturn", materialReturn);
+
+
 
 app.get("/retreiveFile/:fileName", (req, res) => {
   const { fileName } = req.params;

@@ -73,3 +73,6 @@ export { default as productionInward } from "./productionInward.route.js";
 export { default as processBill } from "./processBill.route.js";
 export { default as salesDelivery } from "./salesDelivery.route.js";
 export { default as itemSubGroup } from "./itemSubGroup.route.js";
+export { default as item } from "./Item.route.js";
+export { default as materialIssue } from "./materialIssue.route.js";
+export { default as materialReturn } from "./materialReturn.route.js";

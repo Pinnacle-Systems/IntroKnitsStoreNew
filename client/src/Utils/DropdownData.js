@@ -83,8 +83,8 @@ export const purchasePrPi = [
 ];
 
 export const inwardTypes = [
-  { show: "General Purchase Inward", value: "General Purchase Inward" },
-  { show: "Order Purchase Inward", value: "Order Purchase Inward" },
+  // { show: "General Purchase Inward", value: "General Purchase Inward" },
+  // { show: "Order Purchase Inward", value: "Order Purchase Inward" },
   { show: "Direct Inward", value: "Direct Inward" },
 ];
 
@@ -210,4 +210,11 @@ export const blockTypes = [
 export const outwardProcessTypes = [
   { show: "SINGLE", value: "SINGLE" },
   { show: "MULTIPLE", value: "Multiple" },
+];
+
+
+export const productionTypeNew = [
+  { show: "InHouse", value: "InHouse" },
+  { show: "Outside", value: "Outside" },
+
 ];

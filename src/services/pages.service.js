@@ -8,7 +8,10 @@ async function get(req) {
     const data = await prisma.page.findMany({
         where: {
             active: active ? Boolean(active) : undefined,
-        }
+        },
+        orderBy : {
+            id : "asc"
+        }    
     });
     return { statusCode: 0, data };
 }

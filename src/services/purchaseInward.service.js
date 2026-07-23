@@ -109,19 +109,19 @@ function getApprovalStatus(log, isApprovalTriggered = false) {
   if (!log) {
     return isApprovalTriggered
       ? {
-          status: "NOTAPPROVED",
-          label: "Not Approved",
-          color: "orange",
-          currentLevel: 1,
-          levelLogs: [],
-        }
+        status: "NOTAPPROVED",
+        label: "Not Approved",
+        color: "orange",
+        currentLevel: 1,
+        levelLogs: [],
+      }
       : {
-          status: "NOT_CONFIGURED",
-          label: "No Approval",
-          color: "gray",
-          currentLevel: null,
-          levelLogs: [],
-        };
+        status: "NOT_CONFIGURED",
+        label: "No Approval",
+        color: "gray",
+        currentLevel: null,
+        levelLogs: [],
+      };
   }
   const base = {
     currentLevel: log.currentLevel,
@@ -186,6 +186,7 @@ async function get(req) {
     searchInwardType,
     finYearId,
     searchSupplier,
+    searchDate
   } = req.query;
 
   let finYearDate = await getFinYearStartTimeEndTime(finYearId);
@@ -204,9 +205,9 @@ async function get(req) {
       branchId: branchId ? parseInt(branchId) : undefined,
       AND: finYearDate
         ? [
-            { createdAt: { gte: finYearDate.startTime } },
-            { createdAt: { lte: finYearDate.endTime } },
-          ]
+          { createdAt: { gte: finYearDate.startTime } },
+          { createdAt: { lte: finYearDate.endTime } },
+        ]
         : undefined,
       docId: Boolean(serachDocNo) ? { contains: serachDocNo } : undefined,
       inwardType: Boolean(searchInwardType)
@@ -234,9 +235,9 @@ async function get(req) {
 
   let totalCount = data.length;
 
-  if (searchDocDate) {
+  if (searchDate) {
     data = data?.filter((item) =>
-      String(getDateFromDateTime(item.createdAt)).includes(searchDocDate),
+      String(getDateFromDateTime(item.createdAt)).includes(searchDate),
     );
   }
   if (pagination) {
@@ -254,25 +255,25 @@ async function get(req) {
 
   const approvalLogs = hasApproval
     ? await prisma.approvalLog.findMany({
-        where: { referencePage: REFERENCE_PAGE, referenceId: { in: ids } },
-        select: {
-          id: true,
-          referenceId: true,
-          status: true,
-          remarks: true,
-          currentLevel: true,
-          LevelLogs: {
-            select: {
-              action: true,
-              levelNo: true,
-              userId: true,
-              createdAt: true,
-              User: { select: { id: true, username: true } },
-            },
-            orderBy: { createdAt: "asc" },
+      where: { referencePage: REFERENCE_PAGE, referenceId: { in: ids } },
+      select: {
+        id: true,
+        referenceId: true,
+        status: true,
+        remarks: true,
+        currentLevel: true,
+        LevelLogs: {
+          select: {
+            action: true,
+            levelNo: true,
+            userId: true,
+            createdAt: true,
+            User: { select: { id: true, username: true } },
           },
+          orderBy: { createdAt: "asc" },
         },
-      })
+      },
+    })
     : [];
 
   const logMap = approvalLogs.reduce((acc, log) => {
@@ -284,22 +285,22 @@ async function get(req) {
   const activeConfigs =
     hasApproval && module
       ? await prisma.approvalConfig.findMany({
-          where: {
-            moduleId: module.id,
-            branchId: parseInt(branchId),
-            active: true,
+        where: {
+          moduleId: module.id,
+          branchId: parseInt(branchId),
+          active: true,
+        },
+        include: {
+          ConfigConditions: {
+            include: { Field: true, Operator: true, CompareField: true },
           },
-          include: {
-            ConfigConditions: {
-              include: { Field: true, Operator: true, CompareField: true },
-            },
-            approvalLevels: {
-              include: { LevelUsers: true },
-              orderBy: { levelNo: "asc" },
-            },
+          approvalLevels: {
+            include: { LevelUsers: true },
+            orderBy: { levelNo: "asc" },
           },
-          orderBy: { priority: "asc" },
-        })
+        },
+        orderBy: { priority: "asc" },
+      })
       : [];
 
   return {
@@ -533,33 +534,17 @@ async function create(body) {
   } = await body;
 
   let finYearDate = await getFinYearStartTimeEndTime(finYearId);
-  const shortCode = finYearDate
-    ? getYearShortCodeForFinYear(
-        finYearDate?.startDateStartTime,
-        finYearDate?.endDateEndTime,
-      )
-    : "";
-  let newDocId = await getNextDocId(
-    branchId,
-    shortCode,
-    finYearDate?.startDateStartTime,
-    finYearDate?.endDateEndTime,
-    draftSave,
-  );
+  const shortCode = finYearDate ? getYearShortCodeForFinYear(finYearDate?.startDateStartTime, finYearDate?.endDateEndTime,) : "";
+  let newDocId = await getNextDocId(branchId, shortCode, finYearDate?.startDateStartTime, finYearDate?.endDateEndTime, draftSave,);
 
-  const safeNetBillValue =
-    netBillValue && !isNaN(Number(netBillValue))
-      ? parseFloat(netBillValue)
-      : null;
+  const safeNetBillValue = netBillValue && !isNaN(Number(netBillValue)) ? parseFloat(netBillValue) : null;
+  const { module, hasApproval } = await getModuleApprovalSetup(REFERENCE_PAGE, branchId,);
 
-  const { module, hasApproval } = await getModuleApprovalSetup(
-    REFERENCE_PAGE,
-    branchId,
-  );
 
   let data;
   await prisma.$transaction(async (tx) => {
     data = await tx.purchaseInward.create({
+
       data: {
         docId: newDocId,
         docDate: docDate ? new Date(docDate) : null,
@@ -582,33 +567,24 @@ async function create(body) {
         attachments:
           JSON.parse(attachments)?.length > 0
             ? {
-                createMany: {
-                  data: JSON.parse(attachments).map((sub) => ({
-                    date: sub?.date ? new Date(sub.date) : undefined,
-                    filePath: sub?.filePath || undefined,
-                    name: sub?.name || undefined,
-                  })),
-                },
-              }
+              createMany: {
+                data: JSON.parse(attachments).map((sub) => ({
+                  date: sub?.date ? new Date(sub.date) : undefined,
+                  filePath: sub?.filePath || undefined,
+                  name: sub?.name || undefined,
+                })),
+              },
+            }
             : undefined,
       },
     });
 
-    const inwardItems =
-      typeof rawInwardItems === "string"
-        ? JSON.parse(rawInwardItems)
-        : rawInwardItems;
-    await createInwardItems(
-      tx,
-      inwardItems,
-      data,
-      userId,
-      locationId,
-      storeId,
-      inwardType,
-      invNo,
-      dcNo,
-    );
+    const inwardItems = typeof rawInwardItems === "string" ? JSON.parse(rawInwardItems) : rawInwardItems;
+
+    await createInwardItems(tx, inwardItems, data, userId, locationId, storeId, inwardType, invNo, dcNo,);
+
+
+
 
     if (receiptType === "Against Invoice") {
       await tx.purchaseLedger.create({
@@ -664,34 +640,25 @@ async function createInwardItems(
 ) {
   const promises = inwardItems?.map(async (stockDetail) => {
     const createdItem = await tx.inwardItems.create({
+
       data: {
         purchaseInwardId: parseInt(purchaseInward.id),
-        styleItemId: stockDetail?.styleItemId
-          ? parseInt(stockDetail.styleItemId)
-          : null,
+        itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
         uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
         hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
         poQty: stockDetail?.poQty ? parseInt(stockDetail.poQty) : null,
-        inwardQty: stockDetail?.inwardQty
-          ? parseInt(stockDetail.inwardQty)
-          : null,
+        inwardQty: stockDetail?.inwardQty ? parseInt(stockDetail.inwardQty) : null,
         inwardType: inwardType || "",
         poId: stockDetail?.poId ? parseInt(stockDetail.poId) : null,
         invNo: invNo || null,
         price: stockDetail?.price ? parseInt(stockDetail.price) : null,
-        itemGroupId: stockDetail?.itemGroupId
-          ? parseInt(stockDetail.itemGroupId)
-          : null,
+        itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
         sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
         colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
         dcNo: dcNo || null,
         discountType: stockDetail?.discountType ?? undefined,
-        discountValue: stockDetail?.discountValue
-          ? parseInt(stockDetail.discountValue)
-          : null,
-        taxPercent: stockDetail?.taxPercent
-          ? parseInt(stockDetail.taxPercent)
-          : null,
+        discountValue: stockDetail?.discountValue ? parseInt(stockDetail.discountValue) : null,
+        taxPercent: stockDetail?.taxPercent ? parseInt(stockDetail.taxPercent) : null,
         gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
       },
     });
@@ -703,17 +670,13 @@ async function createInwardItems(
         branchId: parseInt(locationId),
         storeId: parseInt(storeId),
         inwardItemsId: createdItem.id,
-        styleItemId: stockDetail?.styleItemId
-          ? parseInt(stockDetail.styleItemId)
-          : null,
+        itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
         uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
         hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
         qty: stockDetail?.inwardQty ? parseInt(stockDetail.inwardQty) : null,
         inwardType: inwardType || "",
         invNo: invNo || null,
-        itemGroupId: stockDetail?.itemGroupId
-          ? parseInt(stockDetail.itemGroupId)
-          : null,
+        itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
         sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
         colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
         gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
@@ -829,11 +792,11 @@ async function update(id, body, files) {
       (dataFound.docDate &&
         docDate &&
         new Date(dataFound.docDate).toISOString().split("T")[0] !==
-          new Date(docDate).toISOString().split("T")[0]) ||
+        new Date(docDate).toISOString().split("T")[0]) ||
       (dataFound.dcDate &&
         dcDate &&
         new Date(dataFound.dcDate).toISOString().split("T")[0] !==
-          new Date(dcDate).toISOString().split("T")[0]) ||
+        new Date(dcDate).toISOString().split("T")[0]) ||
       dataFound.inwardType !== inwardType ||
       dataFound.dcNo !== dcNo ||
       dataFound.invNo !== invNo ||
@@ -841,7 +804,7 @@ async function update(id, body, files) {
       parseInt(dataFound.taxTemplateId || 0) !== parseInt(taxTemplateId || 0) ||
       dataFound.discountType !== discountType ||
       parseFloat(dataFound.discountValue || 0) !==
-        parseFloat(discountValue || 0) ||
+      parseFloat(discountValue || 0) ||
       parseFloat(dataFound.netBillValue || 0) !== parseFloat(netBillValue || 0);
 
     const oldItems = dataFound.inwardItems;
@@ -854,7 +817,7 @@ async function update(id, body, files) {
         if (!oldItem) return true; // new item
         return (
           parseFloat(newItem.inwardQty || 0) !==
-            parseFloat(oldItem.inwardQty || 0) ||
+          parseFloat(oldItem.inwardQty || 0) ||
           parseFloat(newItem.price || 0) !== parseFloat(oldItem.price || 0)
         );
       });
@@ -1100,8 +1063,8 @@ async function updateinwardItems(
         where: { id: parseInt(stockDetail.id) },
         data: {
           purchaseInwardId: parseInt(purchaseInward.id),
-          styleItemId: stockDetail?.styleItemId
-            ? parseInt(stockDetail.styleItemId)
+          itemId: stockDetail?.itemId
+            ? parseInt(stockDetail.itemId)
             : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
@@ -1140,8 +1103,8 @@ async function updateinwardItems(
             updatedById: parseInt(userId),
             branchId: parseInt(locationId),
             storeId: parseInt(storeId),
-            styleItemId: stockDetail?.styleItemId
-              ? parseInt(stockDetail.styleItemId)
+            itemId: stockDetail?.itemId
+              ? parseInt(stockDetail.itemId)
               : null,
             uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
             hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
@@ -1169,8 +1132,8 @@ async function updateinwardItems(
             branchId: parseInt(locationId),
             storeId: parseInt(storeId),
             inwardItemsId: updatedItem.id,
-            styleItemId: stockDetail?.styleItemId
-              ? parseInt(stockDetail.styleItemId)
+            itemId: stockDetail?.itemId
+              ? parseInt(stockDetail.itemId)
               : null,
             uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
             hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
@@ -1195,8 +1158,8 @@ async function updateinwardItems(
       const createdItem = await tx.inwardItems.create({
         data: {
           purchaseInwardId: parseInt(purchaseInward.id),
-          styleItemId: stockDetail?.styleItemId
-            ? parseInt(stockDetail.styleItemId)
+          itemId: stockDetail?.itemId
+            ? parseInt(stockDetail.itemId)
             : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
@@ -1380,29 +1343,29 @@ async function getPurchaseDetailStock(req) {
     statusCode: 0,
     data: isMaterial
       ? data.map((d) => ({
-          invNo: d.invNo,
-          styleItemId: d.styleItemId,
-          fabricId: d.fabricId,
-          hsnId: d.hsnId,
-          uomId: d.uomId,
-          fabWidth: d.fabWidth,
-          fabMeter: d._sum.fabMeter,
-          accessoryId: d.accessoryId,
-          accessoryGroupId: d.accessoryGroupId,
-          qty: d._sum.qty,
-          styleId: d.styleId,
-          portionId: d.portionId,
-        }))
+        invNo: d.invNo,
+        styleItemId: d.styleItemId,
+        fabricId: d.fabricId,
+        hsnId: d.hsnId,
+        uomId: d.uomId,
+        fabWidth: d.fabWidth,
+        fabMeter: d._sum.fabMeter,
+        accessoryId: d.accessoryId,
+        accessoryGroupId: d.accessoryGroupId,
+        qty: d._sum.qty,
+        styleId: d.styleId,
+        portionId: d.portionId,
+      }))
       : data.map((d) => ({
-          invNo: purchaseData.invNo,
-          styleItemId: d.styleItemId,
-          fabricId: d.fabricId,
-          hsnId: d.hsnId,
-          uomId: d.uomId,
-          stkQty: d._sum.qty,
-          styleId: d.styleId,
-          styleNo: d.styleNo,
-        })),
+        invNo: purchaseData.invNo,
+        styleItemId: d.styleItemId,
+        fabricId: d.fabricId,
+        hsnId: d.hsnId,
+        uomId: d.uomId,
+        stkQty: d._sum.qty,
+        styleId: d.styleId,
+        styleNo: d.styleNo,
+      })),
     returnType: purchaseData.inwardType,
     supplierId: purchaseData.supplierId,
   };
@@ -1422,13 +1385,13 @@ function manualFilterSearchDataPurchaseInwardItems(
     (item) =>
       (searchDocDate
         ? String(getDateFromDateTime(item.PurchaseInward.docDate)).includes(
-            searchDocDate,
-          )
+          searchDocDate,
+        )
         : true) &&
       (searchDcDate
         ? String(getDateFromDateTime(item.PurchaseInward.dcDate)).includes(
-            searchDcDate,
-          )
+          searchDcDate,
+        )
         : true) &&
       (returnTypeToSearch
         ? returnTypeToSearch.includes(item.PurchaseInward.inwardType)
@@ -1637,8 +1600,8 @@ function manualFilterSearchDataPIItems(searchPIDate, data) {
   return data.filter((item) =>
     searchPIDate
       ? String(getDateFromDateTime(item.PurchaseInward?.docDate)).includes(
-          searchPIDate,
-        )
+        searchPIDate,
+      )
       : true,
   );
 }

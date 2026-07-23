@@ -52,6 +52,7 @@ const PurchaseInwardForm = ({
   supplierList,
   uomList,
   styleItemList,
+  itemGroupList,
   branchList,
   hsnList,
   sizeList,
@@ -73,7 +74,7 @@ const PurchaseInwardForm = ({
   const [supplierId, setSupplierId] = useState("");
   const [inwardItems, setInwardItems] = useState([]);
   const [remarks, setRemarks] = useState("");
-  const [inwardType, setInwardType] = useState("General Purchase Inward");
+  const [inwardType, setInwardType] = useState("Direct Inward");
   const [storeId, setStoreId] = useState("");
   const [docId, setDocId] = useState("");
   const [locationId, setLocationId] = useState("");
@@ -107,8 +108,8 @@ const PurchaseInwardForm = ({
 
   const storeOptions = locationData
     ? locationData.data.filter(
-        (item) => parseInt(item.locationId) === parseInt(locationId),
-      )
+      (item) => parseInt(item.locationId) === parseInt(locationId),
+    )
     : [];
 
   const {
@@ -180,7 +181,7 @@ const PurchaseInwardForm = ({
           : moment.utc(new Date()).format("YYYY-MM-DD"),
       );
       setInwardType(
-        data?.inwardType || fromPoType || "General Purchase Inward",
+        data?.inwardType || fromPoType || "Direct Inward",
       );
       setLocationId(data?.Store ? data.Store.locationId : branchId);
       setStoreId(data?.storeId ? data.storeId : "");
@@ -224,7 +225,7 @@ const PurchaseInwardForm = ({
     dcDate,
     remarks,
     vehicleNo,
-    inwardItems: inwardItems?.filter((po) => po.styleItemId),
+    inwardItems: inwardItems?.filter((po) => po.itemId),
     finYearId,
     invNo,
     receiptType,
@@ -318,7 +319,9 @@ const PurchaseInwardForm = ({
 
     items.forEach((row, index) => {
       const key = [
-        row.styleItemId || "",
+        row.itemId || "",
+        row.itemGroupId || "",
+
         row.sizeId || "",
         row.colorId || "",
         row.gsmId || "",
@@ -328,7 +331,8 @@ const PurchaseInwardForm = ({
         duplicates.push({
           firstIndex: seen.get(key),
           duplicateIndex: index,
-          styleItemId: row.styleItemId,
+          itemId: row.itemId,
+          itemGroupId: row.itemGroupId,
           sizeId: row.sizeId,
           colorId: row.colorId,
           gsmId: row.gsmId,
@@ -352,53 +356,24 @@ const PurchaseInwardForm = ({
       { condition: !data.inwardType, title: "Inward Type is required!" },
       { condition: !data.locationId, title: "Location is required!" },
       { condition: !data.storeId, title: "Location is required!" },
-      { condition: !data.receiptType, title: "Receipt Basis is required!" },
       { condition: !data.supplierId, title: "Supplier is required!" },
 
-      {
-        condition: isAgainstInvoice && !data.invNo,
-        title: "Invoice No is required!",
-      },
-      {
-        condition: isAgainstInvoice && !data.netBillValue,
-        title: "Bill Value is required!",
-      },
-      {
-        condition: isAgainstInvoice && !data.taxTemplateId,
-        title: "Tax Template is required!",
-      },
 
-      // ✅ Conditional: NOT Against Invoice
-      {
-        condition: !isAgainstInvoice && !data.dcNo,
-        title: "DC No is required!",
-      },
-      {
-        condition: !isAgainstInvoice && !data.dcDate,
-        title: "DC Date is required!",
-      },
-      {
-        condition: filledItems.length === 0,
-        title: "Please add at least one item!",
-      },
       {
         condition: !isGridDatasValid(data?.inwardItems, false, [
-          "styleItemId",
+          "itemId",
           "uomId",
           "inwardQty",
         ]),
         title: "Please fill all required item fields!",
       },
-      {
-        condition: isAgainstInvoice && !isAmountMatched,
-        title: "Total Bill Value and Total Net Amount must be Equal.",
-      },
+
       {
         condition: findDuplicates(filledItems).length > 0,
         title: "Duplicate Item Found!",
         html: (() => {
           const dup = findDuplicates(filledItems)[0];
-          return `Item - ${findFromList(dup?.styleItemId, styleItemList?.data, "name")}, Size - ${findFromList(dup?.sizeId, sizeList?.data, "name")}, Color - ${findFromList(dup?.colorId, colorList?.data, "name")}, GSM - ${findFromList(dup?.gsmId, gsmList?.data, "name")}`;
+          return `ItemGroup - ${findFromList(dup?.itemGroupId, itemGroupList?.data, "name")},Item - ${findFromList(dup?.itemId, styleItemList?.data, "name")}, Size - ${findFromList(dup?.sizeId, sizeList?.data, "name")}, Color - ${findFromList(dup?.colorId, colorList?.data, "name")}, GSM - ${findFromList(dup?.gsmId, gsmList?.data, "name")}`;
         })(),
       },
     ];
@@ -635,13 +610,12 @@ const PurchaseInwardForm = ({
                       <tr
                         key={index}
                         onClick={() => setSelectedAttachmentIndex(index)}
-                        className={`transition-colors border-b border-gray-200 text-[12px] cursor-pointer ${
-                          index === selectedAttachmentIndex
-                            ? "bg-indigo-100 border-l-2 border-l-indigo-500"
-                            : index % 2 === 0
-                              ? "bg-white hover:bg-gray-50"
-                              : "bg-gray-100 hover:bg-gray-50"
-                        }`}
+                        className={`transition-colors border-b border-gray-200 text-[12px] cursor-pointer ${index === selectedAttachmentIndex
+                          ? "bg-indigo-100 border-l-2 border-l-indigo-500"
+                          : index % 2 === 0
+                            ? "bg-white hover:bg-gray-50"
+                            : "bg-gray-100 hover:bg-gray-50"
+                          }`}
                       >
                         {/* S.No */}
                         <td className="border-r border-white/50 h-8 text-center">
@@ -807,9 +781,9 @@ const PurchaseInwardForm = ({
         </div>
       </div>
       <div className="space-y-2 py-2" onKeyDown={handleKeyDown}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
           <div className="border border-slate-200 p-2 bg-white rounded-md shadow-sm col-span-1">
-            <h2 className="font-medium text-slate-700 mb-2">Basic Details</h2>
+            <h2 className="font-medium text-slate-700 mb-1">Basic Details</h2>
             <div className="grid grid-cols-2 gap-1">
               <ReusableInput
                 label="Purchase Inward No"
@@ -824,7 +798,7 @@ const PurchaseInwardForm = ({
                 readOnly={true}
                 disabled
               />
-              <DropdownInput
+              {/* <DropdownInput
                 name="Branch"
                 options={
                   branchList
@@ -846,6 +820,29 @@ const PurchaseInwardForm = ({
                 readOnly={id}
                 // autoFocus={true}
                 ref={supplierRef}
+              /> */}
+
+            </div>
+          </div>
+
+          <div className="border border-slate-200 p-2 bg-white rounded-md shadow-sm col-span-1">
+            <h2 className="font-medium text-slate-700 mb-1">Inward Details</h2>
+            <div className="grid grid-cols-2 gap-1 ">
+              <DropdownInput
+                name="Inward Type"
+                options={inwardTypes}
+                value={inwardType}
+                setValue={(value) => {
+                  setInwardType(value);
+                }}
+                required={true}
+                readOnly={readOnly}
+                disabled={id || fromPoType}
+                beforeChange={() => {
+                  setInwardItems([]);
+                }}
+                autoFocus={true}
+
               />
               <DropdownWithModal
                 name="Location"
@@ -867,27 +864,7 @@ const PurchaseInwardForm = ({
                 addNewModalWidth="w-[40%] h-[48%]"
                 disabled={id}
               />
-            </div>
-          </div>
-
-          <div className="border border-slate-200 p-2 bg-white rounded-md shadow-sm col-span-1">
-            <h2 className="font-medium text-slate-700 mb-2">Inward Details</h2>
-            <div className="grid grid-cols-2 gap-1 ">
-              <DropdownInput
-                name="Inward Type"
-                options={inwardTypes}
-                value={inwardType}
-                setValue={(value) => {
-                  setInwardType(value);
-                }}
-                required={true}
-                readOnly={readOnly}
-                disabled={id || fromPoType}
-                beforeChange={() => {
-                  setInwardItems([]);
-                }}
-              />
-              <DropdownInput
+              {/* <DropdownInput
                 name="Receipt Basis"
                 options={receiptTypes}
                 value={receiptType}
@@ -932,83 +909,54 @@ const PurchaseInwardForm = ({
                   disabled={receiptType !== "Against Invoice"}
                   className={"text-right"}
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 
-          <div className="border border-slate-200 p-2 bg-white rounded-md shadow-sm col-span-1">
-            <h2 className="font-medium text-slate-700 mb-2">
+          <div className="border border-slate-200 p-2 bg-white rounded-md shadow-sm col-span-3">
+            <h2 className="font-medium text-slate-700 mb-1">
               Supplier Details
             </h2>
-            <div className="grid grid-cols-2 gap-1">
-              <DropdownWithModal
-                name="Supplier"
-                options={dropDownListObject(
-                  id
-                    ? supplierList?.data?.filter((item) => item?.isSupplier)
-                    : supplierList?.data?.filter(
+            <div className="grid grid-cols-5 gap-1">
+              <div className="col-span-3">
+                <DropdownWithModal
+                  name="Supplier"
+                  options={dropDownListObject(
+                    id
+                      ? supplierList?.data?.filter((item) => item?.isSupplier)
+                      : supplierList?.data?.filter(
                         (item) => item?.active && item?.isSupplier,
                       ),
-                  "name",
-                  "id",
-                )}
-                value={supplierId}
-                setValue={setSupplierId}
-                required={true}
-                readOnly={readOnly}
-                className={`w-[150px]`}
-                // disabled={childRecord.current > 0}
-                addNewLabel="+ Add New Supplier"
-                childComponent={PartyMaster}
-                addNewModalWidth="w-[90%] h-[95%]"
-                disabled={id || !!fromPoSupplierId}
-              />
-              <DropdownInput
-                name="Tax Type"
-                options={dropDownListObject(
-                  taxTypeList ? taxTypeList?.data : [],
-                  "name",
-                  "id",
-                )}
-                value={taxTemplateId}
-                setValue={setTaxTemplateId}
-                required={receiptType === "Against Invoice"}
-                readOnly={readOnly}
-                disabled={receiptType !== "Against Invoice"}
-              />
-              {/* <DropdownWithModal
-                name="Tax Type"
-                options={dropDownListObject(
-                  id
-                    ? taxTypeList?.data
-                    : taxTypeList?.data?.filter((item) => item?.active),
-                  "name",
-                  "id",
-                )}
-                value={taxTemplateId}
-                setValue={setTaxTemplateId}
-                required={receiptType === "Against Invoice"}
-                readOnly={readOnly}
-                className={`w-[150px]`}
-                // disabled={childRecord.current > 0}
-                addNewLabel="+ Add New Tax Template"
-                childComponent={TaxTemplate}
-                addNewModalWidth="w-[82%] h-[85%]"
-                disabled={receiptType !== "Against Invoice"}
-              /> */}
+                    "name",
+                    "id",
+                  )}
+                  value={supplierId}
+                  setValue={setSupplierId}
+                  required={true}
+                  readOnly={readOnly}
+                  className={`w-[150px]`}
+                  // disabled={childRecord.current > 0}
+                  addNewLabel="+ Add New Supplier"
+                  childComponent={PartyMaster}
+                  addNewModalWidth="w-[90%] h-[95%]"
+                  disabled={id || !!fromPoSupplierId}
+                />
+              </div>
+
+
               <TextInput
                 name={"Dc No."}
                 value={dcNo}
                 setValue={setDcNo}
                 readOnly={readOnly}
-                required={receiptType !== "Against Invoice"}
+              // required={receiptType !== "Against Invoice"}
               />
               <div className="w-44">
                 <DateInputNew
                   name="Dc Date"
                   value={dcDate}
                   setValue={setDcDate}
-                  required={receiptType !== "Against Invoice"}
+                  // required={receiptType !== "Against Invoice"}
                   readOnly={readOnly}
                   type={"date"}
                 />
@@ -1025,6 +973,7 @@ const PurchaseInwardForm = ({
             uomList={uomList}
             hsnList={hsnList}
             styleItemList={styleItemList}
+            itemGroupList={itemGroupList}
             inwardType={inwardType}
             supplierId={supplierId}
             branchId={branchId}
@@ -1227,7 +1176,7 @@ const PurchaseInwardForm = ({
                   Edit
                 </button>
               ))}
-            {
+            {/* {
               <button
                 type="button"
                 onClick={() => {
@@ -1238,7 +1187,7 @@ const PurchaseInwardForm = ({
               >
                 📎 Upload
               </button>
-            }
+            } */}
             {receiptType === "Against Invoice" && (
               <button
                 className="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-800 flex items-center text-xs font-medium"

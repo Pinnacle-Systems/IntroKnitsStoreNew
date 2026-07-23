@@ -196,10 +196,10 @@ async function get(req) {
       productId: productId ? parseInt(productId) : undefined,
       Product: searchProduct
         ? {
-            name: {
-              contains: searchProduct,
-            },
-          }
+          name: {
+            contains: searchProduct,
+          },
+        }
         : undefined,
     },
   });
@@ -526,7 +526,7 @@ async function getStock(req, res) {
         ...(branchId ? { branchId } : {}),
       },
       include: {
-        StyleItem: true,
+        Item: true,
         Itemgroup: true,
         Size: true,
         Color: true,
@@ -538,29 +538,115 @@ async function getStock(req, res) {
       },
     });
 
+    console.log(stocks, 'stocks')
+
     // ── group by unique combination ──────────────────────────────────────────
     const grouped = {};
 
     for (const s of stocks) {
       const key = [
-        s.styleItemId ?? "null",
         s.storeId ?? "null",
         s.itemGroupId ?? "null",
+        s.itemId ?? "null",
         s.sizeId ?? "null",
         s.colorId ?? "null",
-        s.gsmId ?? "null",
         s.uomId ?? "null",
+        s.gsmId ?? "null",
+
       ].join("-");
 
       if (!grouped[key]) {
         grouped[key] = {
           id: key,
           store: s.Store?.storeName ?? "—",
-          styleItem: s.StyleItem?.name ?? "—",
           itemGroup: s.Itemgroup?.name ?? "—",
+          item: s.Item?.name ?? "—",
           size: s.Size?.name ?? "—",
           color: s.Color?.name ?? "—",
+          uom: s.Uom?.name ?? "—",
           gsm: s.Gsm?.name ?? "—",
+          branch: s.Branch?.name ?? "—",
+          netQty: 0,
+        };
+      }
+      grouped[key].netQty += s.qty ?? 0;
+    }
+
+    const data = Object.values(grouped);
+
+    // ── summary ──────────────────────────────────────────────────────────────
+    const summary = {
+      totalItems: data.length,
+      negativeQty: data.filter((r) => r.netQty < 0).length,
+      zeroQty: data.filter((r) => r.netQty === 0).length,
+      positiveQty: data.filter((r) => r.netQty > 0).length,
+      totalNetQty: data.reduce((s, r) => s + r.netQty, 0),
+    };
+
+    return { data, summary };
+  } catch (err) {
+    console.error("Stock report error:", err);
+    return res.status(500).json({ error: "Failed to generate stock report" });
+  }
+}
+
+
+async function getStockforMaterialIssue(req, res) {
+  try {
+    const branchId = req.query.branchId ? parseInt(req.query.branchId) : undefined;
+
+
+    const { searchItemGroup, searchItem, searchSize, searchColor, searchUom } = req.query
+
+    const stocks = await prisma.stock.findMany({
+      where: {
+        ...(branchId ? { branchId } : {}),
+        Itemgroup: { name: searchItemGroup ? { contains: searchItemGroup } : undefined },
+        Item: { name: searchItem ? { contains: searchItem } : undefined },
+        Size: { name: searchSize ? { contains: searchSize } : undefined },
+        Color: { name: searchColor ? { contains: searchColor } : undefined },
+        Uom: { name: searchUom ? { contains: searchUom } : undefined },
+
+      },
+      include: {
+        Item: true,
+        Itemgroup: true,
+        Size: true,
+        Color: true,
+        Gsm: true,
+        Uom: true,
+        Store: true,
+        Branch: true,
+        Product: true,
+      },
+    });
+
+    console.log(stocks, 'stocks')
+
+    // ── group by unique combination ──────────────────────────────────────────
+    const grouped = {};
+
+    for (const s of stocks) {
+      const key = [
+        s.storeId ?? "null",
+        s.itemGroupId ?? "null",
+        s.itemId ?? "null",
+        s.sizeId ?? "null",
+        s.colorId ?? "null",
+        s.uomId ?? "null",
+
+      ].join("-");
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          ...s,
+          uniquekey: key,
+          id: s.id,
+          store: s.Store?.storeName ?? "—",
+          itemGroup: s.Itemgroup?.name ?? "—",
+          item: s.Item?.name ?? "—",
+          size: s.Size?.name ?? "—",
+          color: s.Color?.name ?? "—",
           uom: s.Uom?.name ?? "—",
           branch: s.Branch?.name ?? "—",
           netQty: 0,
@@ -596,4 +682,5 @@ export {
   remove,
   getStock,
   getBoardQty,
+  getStockforMaterialIssue
 };

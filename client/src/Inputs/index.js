@@ -54,17 +54,17 @@ export const handleOnChange = (event, setValue, type) => {
 
   setValue(
     valueBeforeCursor +
-      inputValue.slice(inputSelectionStart, inputSelectionEnd) +
-      valueAfterCursor,
+    inputValue.slice(inputSelectionStart, inputSelectionEnd) +
+    valueAfterCursor,
   );
 
   // Set the cursor position to the end of the input value
   setTimeout(() => {
     event.target.setSelectionRange(
       valueBeforeCursor.length +
-        inputValue.slice(inputSelectionStart, inputSelectionEnd).length,
+      inputValue.slice(inputSelectionStart, inputSelectionEnd).length,
       valueBeforeCursor.length +
-        inputValue.slice(inputSelectionStart, inputSelectionEnd).length,
+      inputValue.slice(inputSelectionStart, inputSelectionEnd).length,
     );
   });
 };
@@ -134,7 +134,7 @@ export const MultiSelectDropdown = ({
         menuPortalTarget={document.body}
         options={options}
         value={selected}
-        onChange={readOnly ? () => {} : setSelected}
+        onChange={readOnly ? () => { } : setSelected}
         labelledBy="Select"
         hasSelectAll={false}
         styles={{
@@ -225,7 +225,7 @@ export const MultiSelectDropdownWithoutBorder = ({
         menuPortalTarget={document.body}
         options={options}
         value={selected}
-        onChange={readOnly ? () => {} : setSelected}
+        onChange={readOnly ? () => { } : setSelected}
         labelledBy="Select"
         hasSelectAll={false}
         styles={{
@@ -365,11 +365,10 @@ export const TextInput = forwardRef(
           className={`h-7 w-full px-3 py-0 border border-gray-300 rounded-lg
           outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
           transition-all duration-150 shadow-sm
-          ${
-            readOnly || disabled
+          ${readOnly || disabled
               ? "bg-gray-100 text-gray-500 cursor-not-allowed"
               : "bg-white hover:border-gray-400"
-          }
+            }
           ${FORM_INPUT_TEXT_CLASS} ${className}`}
           autoFocus={autoFocus}
           onKeyDown={onKeyDown}
@@ -497,7 +496,7 @@ export const DropdownInput = forwardRef(
   (
     {
       name,
-      beforeChange = () => {},
+      beforeChange = () => { },
       onBlur = null,
       options,
       value,
@@ -943,7 +942,7 @@ export const DropdownWithSearch = ({
     });
 
     return () => {
-      dropDownElement.removeEventListener("keydown", () => {});
+      dropDownElement.removeEventListener("keydown", () => { });
     };
   }, [currentIndex]);
 
@@ -963,11 +962,11 @@ export const DropdownWithSearch = ({
         values={
           value
             ? [
-                {
-                  id: value,
-                  name: findFromList(value, options || [], "name"),
-                },
-              ]
+              {
+                id: value,
+                name: findFromList(value, options || [], "name"),
+              },
+            ]
             : []
         }
         onChange={(value) => {
@@ -1014,8 +1013,7 @@ export function ReusableInput({
         disabled={disabled}
         className={`h-7 w-full px-2 py-0 border border-slate-300 rounded-md 
           focus:border-indigo-300 outline-none transition-all duration-200
-          hover:border-slate-400 ${
-            readOnly || disabled ? "bg-slate-100" : ""
+          hover:border-slate-400 ${readOnly || disabled ? "bg-slate-100" : ""
           } ${FORM_INPUT_TEXT_CLASS} ${className}`}
         autoFocus={autoFocus}
       />
@@ -1049,8 +1047,7 @@ export function ReusableInputNew({
         disabled={disabled}
         className={`h-7 w-full px-2 py-0 border border-slate-300 rounded-md 
           focus:border-indigo-300 focus:outline-none transition-all duration-200
-          hover:border-slate-400 ${
-            readOnly || disabled ? "bg-slate-100" : ""
+          hover:border-slate-400 ${readOnly || disabled ? "bg-slate-100" : ""
           } ${FORM_INPUT_TEXT_CLASS} ${className}`}
       />
     </div>
@@ -1410,10 +1407,10 @@ export const TextInputNew = forwardRef(
           ref={ref}
           type={
             type === "pan_no" ||
-            type === "aadhar" ||
-            type === "gst_no" ||
-            type === "pincode" ||
-            type === "mobile"
+              type === "aadhar" ||
+              type === "gst_no" ||
+              type === "pincode" ||
+              type === "mobile"
               ? "text"
               : type
           }
@@ -1552,7 +1549,7 @@ export const DropdownInputNew = forwardRef(
   (
     {
       name,
-      beforeChange = () => {},
+      beforeChange = () => { },
       onBlur = null,
       options,
       value,
@@ -1671,11 +1668,10 @@ export const ReusableTable = ({
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`px-3 py-1 rounded-md ${
-              currentPage === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-600 hover:bg-gray-100"
-            }`}
+            className={`px-3 py-1 rounded-md ${currentPage === 1
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-white text-gray-600 hover:bg-gray-100"
+              }`}
           >
             <FaChevronLeft className="inline" />
           </button>
@@ -1696,11 +1692,10 @@ export const ReusableTable = ({
               <button
                 key={pageNum}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded-md ${
-                  currentPage === pageNum
-                    ? "bg-indigo-800 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
+                className={`px-3 py-1 rounded-md ${currentPage === pageNum
+                  ? "bg-indigo-800 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
               >
                 {pageNum}
               </button>
@@ -1714,11 +1709,10 @@ export const ReusableTable = ({
           {totalPages > 5 && currentPage < totalPages - 2 && (
             <button
               onClick={() => handlePageChange(totalPages)}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === totalPages
-                  ? "bg-indigo-800 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100"
-              }`}
+              className={`px-3 py-1 rounded-md ${currentPage === totalPages
+                ? "bg-indigo-800 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+                }`}
             >
               {totalPages}
             </button>
@@ -1727,11 +1721,10 @@ export const ReusableTable = ({
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={`px-3 py-1 rounded-md ${
-              currentPage === totalPages
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-600 hover:bg-gray-100"
-            }`}
+            className={`px-3 py-1 rounded-md ${currentPage === totalPages
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-white text-gray-600 hover:bg-gray-100"
+              }`}
           >
             <FaChevronRight className="inline" />
           </button>
@@ -1751,9 +1744,8 @@ export const ReusableTable = ({
                   {columns?.map((column, index) => (
                     <th
                       key={index}
-                      className={` font-medium text-gray-900 py-2 text-[12px] px-8 text-center uppercase  ${
-                        column.header !== "" ? "border-r border-white/50" : ""
-                      } `}
+                      className={` font-medium text-gray-900 py-2 text-[12px] px-8 text-center uppercase  ${column.header !== "" ? "border-r border-white/50" : ""
+                        } `}
                     >
                       {column.header}
                     </th>
@@ -1782,9 +1774,8 @@ export const ReusableTable = ({
                     return (
                       <tr
                         key={item.id}
-                        className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-100"
-                        }`}
+                        className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${index % 2 === 0 ? "bg-white" : "bg-gray-100"
+                          }`}
                       >
                         {columns?.map((column, colIndex) => (
                           <td
@@ -1803,7 +1794,7 @@ export const ReusableTable = ({
                                   onClick={() =>
                                     hasPermission(() => onView(item.id), "read")
                                   }
-                                  // onClick={() => onView(item.id)}
+                                // onClick={() => onView(item.id)}
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -1826,7 +1817,7 @@ export const ReusableTable = ({
                                   onClick={() =>
                                     hasPermission(() => onEdit(item.id), "edit")
                                   }
-                                  // onClick={() => onEdit(item.id)}
+                                // onClick={() => onEdit(item.id)}
                                 >
                                   <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -1847,11 +1838,10 @@ export const ReusableTable = ({
                                   onMouseLeave={() => setHoveredDeleteId(null)}
                                 >
                                   <button
-                                    className={`text-red-800 flex items-center gap-1 px-1 bg-red-50 rounded transition-opacity ${
-                                      hasChildRecords
-                                        ? "opacity-40 cursor-not-allowed"
-                                        : "hover:bg-red-100"
-                                    }`}
+                                    className={`text-red-800 flex items-center gap-1 px-1 bg-red-50 rounded transition-opacity ${hasChildRecords
+                                      ? "opacity-40 cursor-not-allowed"
+                                      : "hover:bg-red-100"
+                                      }`}
                                     // cursor-pointer
                                     // onClick={() => {
                                     //   if (!hasChildRecords) {
@@ -3074,11 +3064,10 @@ export const DateInputNew = forwardRef(
       <div className="grid-cols-1 md:grid-cols-3 items-center mb-1">
         {name && (
           <label
-            className={`${FORM_LABEL_CLASS} ${
-              required
-                ? 'after:content-["*"] after:ml-0.5 after:text-red-500'
-                : ""
-            }`}
+            className={`${FORM_LABEL_CLASS} ${required
+              ? 'after:content-["*"] after:ml-0.5 after:text-red-500'
+              : ""
+              }`}
           >
             {name}
           </label>
@@ -3147,10 +3136,9 @@ export const TextAreaNew = ({
           focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
           transition-all duration-150 shadow-sm  resize-y
 
-          ${
-            readOnly || disabled
-              ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-              : "bg-white hover:border-gray-400"
+          ${readOnly || disabled
+            ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+            : "bg-white hover:border-gray-400"
           }
           ${FORM_INPUT_TEXT_CLASS} ${inputClass}`}
       ></textarea>
@@ -3632,6 +3620,7 @@ export default function FxSelect({
   advanceOnEnter = false,
   advanceOnSelect = false,
   nextRef,
+  disabled = false,
 }) {
   const selectRef = useRef(null);
   const [menuIsOpen, setMenuIsOpen] = useState(false);
@@ -3677,7 +3666,7 @@ export default function FxSelect({
         IndicatorSeparator: () => null, // remove separator
       }}
       isClearable
-      isDisabled={readOnly}
+      isDisabled={readOnly || disabled}
       options={options}
       value={options.find((opt) => opt.value === value) || null}
       onChange={(selected) => {
@@ -3803,9 +3792,8 @@ export const FxSelectWithAdd = forwardRef(function FxSelectWithAdd(
       return (
         <div
           {...props.innerProps}
-          className={`px-3 py-1 text-xs text-blue-600 font-semibold cursor-pointer border-t ${
-            props.isFocused ? "bg-blue-100" : ""
-          }`}
+          className={`px-3 py-1 text-xs text-blue-600 font-semibold cursor-pointer border-t ${props.isFocused ? "bg-blue-100" : ""
+            }`}
         >
           + Create New "{searchValue.toUpperCase()}"
         </div>
@@ -4039,19 +4027,19 @@ export const DropdownNew = forwardRef(
       otherValue,
       onKeyDown,
       autoFocus,
-      beforeChange = () => {},
+      beforeChange = () => { },
     },
     ref,
   ) => {
     const options = [
       ...(clear
         ? [
-            {
-              value: "",
-              label: `Select ${name || placeholder || "Option"}`,
-              isDisabled: false,
-            },
-          ]
+          {
+            value: "",
+            label: `Select ${name || placeholder || "Option"}`,
+            isDisabled: false,
+          },
+        ]
         : []),
       ...(dataList?.map((item) => ({
         value: otherValue ? item?.[otherValue] : item?.id,

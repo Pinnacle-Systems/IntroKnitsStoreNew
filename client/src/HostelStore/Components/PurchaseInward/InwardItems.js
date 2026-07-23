@@ -5,11 +5,12 @@ import Modal from "../../../UiComponents/Modal";
 import PoItemsSelection from "./PoItemsSelection";
 import { useLazyGetStyleItemMasterByIdQuery } from "../../../redux/services/StyleItemMasterService";
 import { getUniqueArrayBySize } from "../../../Utils/helper";
-import { ColorMaster, Size, StyleItemMaster } from "..";
+import { ColorMaster, Size, StyleItemMaster, ItemGroup } from "..";
 import { useGetPoItemsQuery } from "../../../redux/uniformService/PoServices";
 import { VIEW } from "../../../icons";
 import { toast } from "react-toastify";
 import TaxDetailsFullTemplate from "./TaxDetailsFullTemplate";
+import { useLazyGetItemMasterByIdQuery } from "../../../redux/services/ItemMasterService";
 const InwardItems = ({
   id,
   inwardItems,
@@ -17,6 +18,7 @@ const InwardItems = ({
   readOnly,
   params,
   styleItemList,
+  itemGroupList,
   uomList,
   hsnList,
   taxTemplateId,
@@ -61,6 +63,8 @@ const InwardItems = ({
 
   const skipFocusRef = useRef(false);
 
+  console.log(inwardItems, "inwardItems")
+
   const addRow = () => {
     const newRow = {
       styleItemId: "",
@@ -77,15 +81,13 @@ const InwardItems = ({
     setInwardItems([...inwardItems, newRow]);
   };
   const [triggerGetStyleItem, { data: styleData }] =
-    useLazyGetStyleItemMasterByIdQuery();
+    useLazyGetItemMasterByIdQuery();
   const handleInputChange = async (value, index, field) => {
     // clone first
     const newRows = structuredClone(inwardItems);
-    if (field === "styleItemId") {
-      // 1️⃣ update immediately
-      newRows[index].styleItemId = value;
-      setInwardItems([...newRows]); // 🔥 maintain UI instantly
-
+    if (field === "itemId") {
+      newRows[index].itemId = value;
+      setInwardItems([...newRows]);
       try {
         // 2️⃣ fetch style data
         const response = await triggerGetStyleItem(value).unwrap();
@@ -145,7 +147,7 @@ const InwardItems = ({
   useEffect(() => {
     // If edit mode (id exists)
     if (id && inwardItems?.length > 0) {
-      const requiredRows = 4;
+      const requiredRows = 8;
       const missingRows = requiredRows - inwardItems.length;
 
       if (missingRows > 0) {
@@ -158,7 +160,7 @@ const InwardItems = ({
 
     // If create mode (no id)
     if (!id && (!inwardItems || inwardItems.length === 0)) {
-      setInwardItems(Array.from({ length: 4 }, () => ({ ...EMPTY_ROW })));
+      setInwardItems(Array.from({ length: 8 }, () => ({ ...EMPTY_ROW })));
     }
   }, [id, inwardItems]);
 
@@ -277,7 +279,7 @@ const InwardItems = ({
         />
       </Modal>
       <div className="border border-slate-200 px-2 bg-white rounded-md shadow-sm min-h-[270px] overflow-auto  w-full">
-        <div className="flex items-center my-2 justify-between">
+        {/* <div className="flex items-center my-2 justify-between">
           <h2 className="font-medium text-slate-700">List Of Items</h2>
           {showFillButton && (
             <button
@@ -310,9 +312,9 @@ const InwardItems = ({
               Auto-filled from PO
             </span>
           )}
-        </div>
+        </div> */}
         <div
-          className={`w-full min-h-[205px] max-h-[205px] overflow-y-auto  my-2`}
+          className={`w-full min-h-[205px] max-h-[300px] overflow-y-auto  my-2`}
         >
           <table className="w-full border-collapse table-fixed">
             <thead className="bg-gray-200 text-gray-800 sticky top-0 z-10">
@@ -326,7 +328,10 @@ const InwardItems = ({
                   </th>
                 )}
                 <th className={`w-56 px-2 py-2 text-center font-medium`}>
-                  Description of Goods<span className="text-red-500">*</span>
+                  Item Group<span className="text-red-500">*</span>
+                </th>
+                <th className={`w-56 px-2 py-2 text-center font-medium`}>
+                  Item <span className="text-red-500">*</span>
                 </th>
                 <th className={`w-20 px-4 py-2 text-center font-medium`}>
                   Size
@@ -334,9 +339,7 @@ const InwardItems = ({
                 <th className={`w-32 px-4 py-2 text-center font-medium`}>
                   Color
                 </th>
-                <th className={`w-16 px-4 py-2 text-center font-medium`}>
-                  GSM
-                </th>
+
                 <th className={`w-16 px-4 py-2 text-center font-medium`}>
                   UOM
                 </th>
@@ -371,10 +374,10 @@ const InwardItems = ({
                 </th>
                 {(inwardType === "Direct Inward" ||
                   receiptType === "Against Invoice") && (
-                  <th className={`w-16 px-4 py-2 text-center font-medium `}>
-                    Price<span className="text-red-500">*</span>
-                  </th>
-                )}
+                    <th className={`w-16 px-4 py-2 text-center font-medium `}>
+                      Price<span className="text-red-500">*</span>
+                    </th>
+                  )}
                 {receiptType === "Against Invoice" && (
                   <th className={`w-16 px-1 py-2 text-center font-medium `}>
                     Gross
@@ -411,12 +414,12 @@ const InwardItems = ({
                   )}
                   <td className=" text-[11px] border border-gray-300 text-left">
                     <FxSelectWithAdd
-                      inputId={`styleItemId-input-${index}`}
-                      value={row.styleItemId}
+                      inputId={`itemId-input-${index}`}
+                      value={row.itemGroupId}
                       onChange={(val) =>
-                        handleInputChange(val, index, "styleItemId")
+                        handleInputChange(val, index, "itemGroupId")
                       }
-                      options={(styleItemList?.data || [])
+                      options={(itemGroupList?.data || [])
                         .filter((item) => (id ? true : item.active))
                         .map((item) => ({
                           label: item.name,
@@ -425,11 +428,40 @@ const InwardItems = ({
                       readOnly={readOnly || inwardType !== "Direct Inward"}
                       placeholder=""
                       onBlur={() =>
-                        handleInputChange(row.styleItemId, index, "styleItemId")
+                        handleInputChange(row.itemGroupId, index, "itemGroupId")
                       }
                       onKeyDown={(e) => {
                         if (e.key === "Delete") {
-                          handleInputChange("", index, "styleItemId");
+                          handleInputChange("", index, "itemGroupId");
+                        }
+                      }}
+                      addNew={true}
+                      childComponent={ItemGroup}
+                      addNewModalWidth="w-[50%] h-[55%]"
+                      nextRef={vehicleRef}
+                    />
+                  </td>
+                  <td className=" text-[11px] border border-gray-300 text-left">
+                    <FxSelectWithAdd
+                      inputId={`itemId-input-${index}`}
+                      value={row.itemId}
+                      onChange={(val) =>
+                        handleInputChange(val, index, "itemId")
+                      }
+                      options={(styleItemList?.data?.filter(i => i.itemGroupId == row.itemGroupId) || [])
+                        .filter((item) => (id ? true : item.active))
+                        .map((item) => ({
+                          label: item.name,
+                          value: item.id,
+                        }))}
+                      readOnly={readOnly || inwardType !== "Direct Inward" || !row.itemGroupId}
+                      placeholder=""
+                      onBlur={() =>
+                        handleInputChange(row.itemId, index, "itemId")
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Delete") {
+                          handleInputChange("", index, "itemId");
                         }
                       }}
                       addNew={true}
@@ -497,28 +529,7 @@ const InwardItems = ({
                       addNewModalWidth="w-[30%] h-[45%]"
                     />
                   </td>
-                  <td className=" border border-gray-300 text-[11px] ">
-                    <FxSelect
-                      value={row.gsmId}
-                      onChange={(val) => handleInputChange(val, index, "gsmId")}
-                      options={(gsmList?.data || [])
-                        .filter((item) => (id ? true : item.active))
-                        .map((item) => ({
-                          label: item.name,
-                          value: item.id,
-                        }))}
-                      readOnly={readOnly || inwardType !== "Direct Inward"}
-                      placeholder=""
-                      onBlur={() =>
-                        handleInputChange(row.gsmId, index, "gsmId")
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Delete") {
-                          handleInputChange("", index, "gsmId");
-                        }
-                      }}
-                    />
-                  </td>
+
                   <td className=" border border-gray-300 text-[11px] ">
                     <FxSelect
                       value={row.uomId}
@@ -529,7 +540,7 @@ const InwardItems = ({
                           label: item.name,
                           value: item.id,
                         }))}
-                      readOnly={true}
+                      // readOnly={true}
                       placeholder=""
                       onBlur={() =>
                         handleInputChange(row.uomId, index, "uomId")
@@ -847,49 +858,49 @@ const InwardItems = ({
                   </td>
                   {(inwardType === "Direct Inward" ||
                     receiptType === "Against Invoice") && (
-                    <td className="border-blue-gray-200 text-[11px] border border-gray-300 text-right">
-                      <input
-                        onKeyDown={(e) => {
-                          if (e.code === "Minus" || e.code === "NumpadSubtract")
-                            e.preventDefault();
-                          if (e.key === "Delete") {
-                            handleInputChange("", index, "price");
+                      <td className="border-blue-gray-200 text-[11px] border border-gray-300 text-right">
+                        <input
+                          onKeyDown={(e) => {
+                            if (e.code === "Minus" || e.code === "NumpadSubtract")
+                              e.preventDefault();
+                            if (e.key === "Delete") {
+                              handleInputChange("", index, "price");
+                            }
+                          }}
+                          min={"0"}
+                          type="number"
+                          className="text-right rounded px-1 w-full table-data-input"
+                          onFocus={(e) => {
+                            e.target.select();
+                            setFocusedField(`${index}-price`);
+                          }}
+                          value={
+                            focusedField === `${index}-price`
+                              ? (row?.price ?? "")
+                              : row?.price
+                                ? Number(row.price).toFixed(2)
+                                : ""
                           }
-                        }}
-                        min={"0"}
-                        type="number"
-                        className="text-right rounded px-1 w-full table-data-input"
-                        onFocus={(e) => {
-                          e.target.select();
-                          setFocusedField(`${index}-price`);
-                        }}
-                        value={
-                          focusedField === `${index}-price`
-                            ? (row?.price ?? "")
-                            : row?.price
-                              ? Number(row.price).toFixed(2)
-                              : ""
-                        }
-                        onChange={(e) =>
-                          handleInputChange(e.target.value, index, "price")
-                        }
-                        onBlur={(e) => {
-                          const val = e.target.value;
-                          handleInputChange(
-                            val ? Number(val).toFixed(2) : "",
-                            index,
-                            "price",
-                          );
-                          setFocusedField(null);
-                        }}
-                        disabled={
-                          readOnly ||
-                          (row.stockQty ?? 0) > 0 ||
-                          inwardType !== "Direct Inward"
-                        }
-                      />
-                    </td>
-                  )}
+                          onChange={(e) =>
+                            handleInputChange(e.target.value, index, "price")
+                          }
+                          onBlur={(e) => {
+                            const val = e.target.value;
+                            handleInputChange(
+                              val ? Number(val).toFixed(2) : "",
+                              index,
+                              "price",
+                            );
+                            setFocusedField(null);
+                          }}
+                          disabled={
+                            readOnly ||
+                            (row.stockQty ?? 0) > 0 ||
+                            inwardType !== "Direct Inward"
+                          }
+                        />
+                      </td>
+                    )}
                   {receiptType === "Against Invoice" && (
                     <td className=" border border-gray-300 text-[11px]">
                       <input
@@ -900,9 +911,9 @@ const InwardItems = ({
                           !row.inwardQty || !row.price
                             ? 0.0
                             : (
-                                parseFloat(row.inwardQty) *
-                                parseFloat(row.price)
-                              ).toFixed(2)
+                              parseFloat(row.inwardQty) *
+                              parseFloat(row.price)
+                            ).toFixed(2)
                         }
                         disabled={true}
                       />
@@ -1039,12 +1050,12 @@ const InwardItems = ({
                 </td>
                 {(inwardType === "Direct Inward" ||
                   receiptType === "Against Invoice") && (
-                  <td className="text-right border border-gray-300 px-1 font-medium ">
-                    {inwardItems
-                      ?.reduce((sum, row) => sum + (Number(row.price) || 0), 0)
-                      .toFixed(2)}
-                  </td>
-                )}
+                    <td className="text-right border border-gray-300 px-1 font-medium ">
+                      {inwardItems
+                        ?.reduce((sum, row) => sum + (Number(row.price) || 0), 0)
+                        .toFixed(2)}
+                    </td>
+                  )}
                 {receiptType === "Against Invoice" && (
                   <td className="text-right border border-gray-300 px-1 font-medium ">
                     {inwardItems
@@ -1073,7 +1084,7 @@ const InwardItems = ({
             style={{
               position: "fixed",
               top: `${contextMenu.mouseY - 20}px`,
-              left: `${contextMenu.mouseX + 20}px`,
+              left: `${contextMenu.mouseX - 50}px`,
               boxShadow: "0px 0px 5px rgba(0,0,0,0.3)",
               padding: "8px",
               borderRadius: "4px",

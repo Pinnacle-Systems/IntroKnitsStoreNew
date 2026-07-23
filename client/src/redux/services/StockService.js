@@ -114,6 +114,19 @@ const stockApi = createApi({
       },
       providesTags: ["Stock"],
     }),
+    getStockforMaterialIssue: builder.query({
+      query: ({ params }) => {
+        return {
+          url: STOCK_API + "/getStockforMaterialIssue",
+          method: "GET",
+          headers: {
+            "Content-type": "application/json; charset=UTF-8",
+          },
+          params,
+        };
+      },
+      providesTags: ["Stock"],
+    }),
   }),
 });
 
@@ -127,6 +140,7 @@ export const {
   useGetStockReportQuery,
   useGetBoardQtyQuery,
   useLazyGetBoardQtyQuery,
+  useGetStockforMaterialIssueQuery,
 } = stockApi;
 
 export default stockApi;

@@ -51,9 +51,10 @@ const PurchaseInwardFormReport = ({
     setCurrentPageNumber(reactPaginateIndexToPageNumber(e.selected));
   };
   const searchFields = {
-    serachDocNo,
+    serachDocNo: serachDocNo.toUpperCase(),
+    searchClientName: searchClientName.toUpperCase(),
     searchDate,
-    searchSupplier,
+    searchSupplier: searchSupplier.toUpperCase(),
     searchInwardType,
   };
 
@@ -99,7 +100,7 @@ const PurchaseInwardFormReport = ({
 
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math?.ceil(allData?.data?.length / itemsPerPage);
-  const indexOfLastItem = currentPage * parseInt(10);
+  const indexOfLastItem = currentPage * parseInt(15);
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = allData?.data?.slice(indexOfFirstItem, indexOfLastItem);
 
@@ -122,11 +123,10 @@ const PurchaseInwardFormReport = ({
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={`px-3 py-1 rounded-md ${
-              currentPage === 1
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-600 hover:bg-gray-100"
-            }`}
+            className={`px-3 py-1 rounded-md ${currentPage === 1
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-white text-gray-600 hover:bg-gray-100"
+              }`}
           >
             <FaChevronLeft className="inline" />
           </button>
@@ -147,11 +147,10 @@ const PurchaseInwardFormReport = ({
               <button
                 key={pageNum}
                 onClick={() => handlePageChange(pageNum)}
-                className={`px-3 py-1 rounded-md ${
-                  currentPage === pageNum
-                    ? "bg-indigo-800 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
+                className={`px-3 py-1 rounded-md ${currentPage === pageNum
+                  ? "bg-indigo-800 text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-100"
+                  }`}
               >
                 {pageNum}
               </button>
@@ -165,11 +164,10 @@ const PurchaseInwardFormReport = ({
           {totalPages > 5 && currentPage < totalPages - 2 && (
             <button
               onClick={() => handlePageChange(totalPages)}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === totalPages
-                  ? "bg-indigo-800 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100"
-              }`}
+              className={`px-3 py-1 rounded-md ${currentPage === totalPages
+                ? "bg-indigo-800 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+                }`}
             >
               {totalPages}
             </button>
@@ -178,11 +176,10 @@ const PurchaseInwardFormReport = ({
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={`px-3 py-1 rounded-md ${
-              currentPage === totalPages
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-white text-gray-600 hover:bg-gray-100"
-            }`}
+            className={`px-3 py-1 rounded-md ${currentPage === totalPages
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "bg-white text-gray-600 hover:bg-gray-100"
+              }`}
           >
             <FaChevronRight className="inline" />
           </button>
@@ -309,12 +306,12 @@ const PurchaseInwardFormReport = ({
                                             }}
                                         /> */}
                   </th>
-                  <th
+                  {/* <th
                     className=" px-3 w-64  font-medium text-[13px]  text-gray-900  text-center "
                     rowSpan={2}
                   >
                     <div>Status</div>
-                  </th>
+                  </th> */}
                   <th
                     className="w-14   px-3  font-medium text-[13px]  text-gray-900  text-center "
                     rowSpan={2}
@@ -393,9 +390,8 @@ const PurchaseInwardFormReport = ({
                         }}
                         tabIndex={0}
                         key={dataObj.id}
-                        className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${
-                          index % 2 === 0 ? "bg-white" : "bg-gray-100"
-                        }`}
+                        className={`hover:bg-gray-50 transition-colors border-b   border-gray-200 text-[12px] ${index % 2 === 0 ? "bg-white" : "bg-gray-100"
+                          }`}
                         onClick={() => {
                           onClick(dataObj.id);
                         }}
@@ -415,14 +411,13 @@ const PurchaseInwardFormReport = ({
                           {" "}
                           {dataObj?.supplier?.name}
                         </td>
-                        <td className="py-1.5 text-center">
+                        {/* <td className="py-1.5 text-center">
                           <StatusBadge status={dataObj?.status} />
-                        </td>
+                        </td> */}
                         {rowActions && (
                           <td className="px-2 py-1">
                             <div className="flex items-center justify-center">
-                              <div className="flex items-center gap-1 pr-2 border-r border-gray-300">
-                                {/* BILL ENTRY */}
+                              {/* <div className="flex items-center gap-1 pr-2 border-r border-gray-300">
 
                                 <Tooltip title="Create Bill Entry" arrow>
                                   <button
@@ -494,9 +489,8 @@ const PurchaseInwardFormReport = ({
                                     <RotateCcw size={16} />
                                   </button>
                                 </Tooltip>
-                              </div>
+                              </div> */}
 
-                              {/* VIEW / EDIT / DELETE */}
                               <div className="flex items-center gap-1 pl-2">
                                 {onView && (
                                   <Tooltip title="View" arrow>
@@ -548,11 +542,10 @@ const PurchaseInwardFormReport = ({
                                   >
                                     <button
                                       className={`flex items-center gap-1 px-1 rounded transition
-       ${
-         dataObj.childRecord > 0
-           ? "bg-red-50 text-red-500 opacity-40 cursor-not-allowed"
-           : "bg-red-50 text-red-800 hover:bg-red-100"
-       }`}
+       ${dataObj.childRecord > 0
+                                          ? "bg-red-50 text-red-500 opacity-40 cursor-not-allowed"
+                                          : "bg-red-50 text-red-800 hover:bg-red-100"
+                                        }`}
                                       onClick={() => onDelete(dataObj.id)}
                                       disabled={dataObj.childRecord > 0}
                                     >

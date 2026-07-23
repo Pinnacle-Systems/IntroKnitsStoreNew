@@ -11,7 +11,7 @@ async function get(req) {
     include: {
       _count: {
         select: {
-          styleItems: true,
+          Item: true,
         },
       },
     },
@@ -21,7 +21,7 @@ async function get(req) {
     data: data.map((item) => {
       return {
         ...item,
-        childRecord: item._count.styleItems,
+        childRecord: item._count.Item,
       };
     }),
   };

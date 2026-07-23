@@ -48,8 +48,8 @@ async function getSearch(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    console.log(req, "rqe");
-    console.log("req.files =>", req.files);
+    // console.log(req, "rqe");
+    // console.log("req.files =>", req.files);
     res.json(await _create(req.body));
     console.log(res.statusCode);
   } catch (error) {
