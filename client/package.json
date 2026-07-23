@@ -1,5 +1,5 @@
 {
-  "name": "@muthu-printers/web",
+  "name": "@iknit/web",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
