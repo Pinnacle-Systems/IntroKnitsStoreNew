@@ -282,7 +282,8 @@ async function getOne(id) {
   const MaterialReturnItemsWithStock = await Promise.all(
     data.MaterialReturnItems.map(async (item) => {
 
-      const alreadyReturnQty = item?.MaterialIssueItems?.MaterialReturnItems
+      const alreadyReturnQty = item?.MaterialIssueItems?.MaterialReturnItems?.
+        filter((i) => i.materialReturnId != id)
         .reduce((sum, item) => parseInt(sum) + (parseInt(item.returnQty) || 0), 0) || 0;
 
 

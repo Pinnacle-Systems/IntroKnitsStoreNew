@@ -212,7 +212,7 @@ const MaterialReturnForm = ({
         data?.dcDate ? moment.utc(data.dcDate).format("YYYY-MM-DD") : "",
       );
       setLocationId(data?.Store ? data.Store.locationId : branchId);
-
+      setStoreId(data?.locationId ? data?.locationId : "")
       setRemarks(data?.remarks || "");
       setDcNo(data?.dcNo ? data.dcNo : "");
       setVehicleNo(data?.vehicleNo ? data.vehicleNo : "");

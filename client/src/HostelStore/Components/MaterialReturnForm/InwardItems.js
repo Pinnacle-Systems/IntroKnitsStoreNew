@@ -671,7 +671,7 @@ const IssueItems = ({
                   <td className="text-right border border-gray-300 px-1 font-medium ">
                     {inwardItems
                       ?.reduce(
-                        (sum, row) => sum + (Number(row.issueQty) || 0),
+                        (sum, row) => sum + (Number(row.returnQty) || 0),
                         0,
                       )
                       .toFixed(2)}

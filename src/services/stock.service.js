@@ -583,7 +583,7 @@ async function getStock(req, res) {
       totalNetQty: data.reduce((s, r) => s + r.netQty, 0),
     };
 
-    return { data, summary };
+    return { data: data?.filter((r) => r.netQty > 0), summary };
   } catch (err) {
     console.error("Stock report error:", err);
     return res.status(500).json({ error: "Failed to generate stock report" });

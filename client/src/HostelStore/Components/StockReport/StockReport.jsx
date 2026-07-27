@@ -96,7 +96,7 @@ export default function StockReport() {
     [paginated, groupKeys, groupDirs],
   );
 
-  console.log(tree,"tree")
+  console.log(tree, "tree")
 
   // ── metrics ────────────────────────────────────────────────────────────────
   const metrics = useMemo(
@@ -252,13 +252,12 @@ export default function StockReport() {
                     <span
                       key={k}
                       className={`border rounded-full px-2 py-0.5 text-[10px] font-medium
-                      ${
-                        k === "netQty"
+                      ${k === "netQty"
                           ? isNeg
                             ? "bg-red-50 border-red-200 text-red-600"
                             : "bg-green-50 border-green-200 text-green-600"
                           : "bg-white border-indigo-200 text-indigo-600"
-                      }`}
+                        }`}
                     >
                       {label}: {fmt3(qtyTotals[k])}
                     </span>
@@ -555,7 +554,7 @@ export default function StockReport() {
         {/* top bar */}
         <div className="flex items-center justify-between flex-wrap gap-3 bg-white py-0.5 px-2 rounded-lg no-print">
           <h2 className="text-base font-medium text-gray-800">Stock Report</h2>
-          <div className="flex gap-2">
+          {/* <div className="flex gap-2">
             <button
               onClick={exportExcel}
               className="h-8 px-3 text-xs border border-green-300 rounded-lg text-green-600 hover:bg-green-50"
@@ -580,7 +579,7 @@ export default function StockReport() {
             >
               Print PDF
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* print header */}
