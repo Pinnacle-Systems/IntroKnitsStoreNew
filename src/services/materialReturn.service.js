@@ -217,7 +217,22 @@ async function get(req) {
 
     },
     include: {
-      supplier: true
+      supplier: {
+        select: {
+          id: true
+          , name: true,
+          BranchType: {
+            select: {
+              name: true,
+            },
+          },
+          City: {
+            select: {
+              name: true,
+            },
+          },
+        }
+      },
     },
 
     orderBy: { docId: "desc" },
@@ -383,7 +398,7 @@ async function createReturnItems(
     });
     await tx.stock.create({
       data: {
-        inOrOut: "Out",
+        inOrOut: "In",
         processName: "MaterialIssue",
         createdById: parseInt(userId),
         storeId: parseInt(storeId),
@@ -393,7 +408,7 @@ async function createReturnItems(
         sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
         colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
         uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-        qty: stockDetail?.returnQty ? parseInt(0 - stockDetail.returnQty) : null,
+        qty: stockDetail?.returnQty ? parseInt(stockDetail.returnQty) : null,
         inwardType: "MaterialIssue" || "",
         branchId: branchId ? parseInt(branchId) : null
 
@@ -516,7 +531,7 @@ async function updateinwardItems(
         await tx.stock.update({
           where: { id: existingStock.id },
           data: {
-            inOrOut: "Out",
+            inOrOut: "In",
             processName: "MaterialReturn",
             createdById: parseInt(userId),
             storeId: parseInt(storeId),
@@ -526,7 +541,7 @@ async function updateinwardItems(
             sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
             colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
             uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-            qty: stockDetail?.returnQty ? parseInt(0 - stockDetail.returnQty) : null,
+            qty: stockDetail?.returnQty ? parseInt(stockDetail.returnQty) : null,
             inwardType: "MaterialReturn" || "",
             branchId: branchId ? parseInt(branchId) : null
 
@@ -535,7 +550,7 @@ async function updateinwardItems(
       } else {
         await tx.stock.create({
           data: {
-            inOrOut: "Out",
+            inOrOut: "In",
             processName: "MaterialReturn",
             createdById: parseInt(userId),
             storeId: parseInt(storeId),
@@ -545,7 +560,7 @@ async function updateinwardItems(
             sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
             colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
             uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-            qty: stockDetail?.issueQty ? parseInt(0 - stockDetail.issueQty) : null,
+            qty: stockDetail?.issueQty ? parseInt(stockDetail.issueQty) : null,
             inwardType: "MaterialReturn" || "",
             branchId: branchId ? parseInt(branchId) : null
 

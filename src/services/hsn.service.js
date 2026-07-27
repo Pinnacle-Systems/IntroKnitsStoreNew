@@ -13,22 +13,25 @@ async function get(req) {
         include: {
             _count: {
                 select: {
-                    styleItems: true
+                    Item: true
                 }
             }
+        },
+        orderBy: {
+            id: "asc"
         }
     });
     return {
         statusCode: 0, data: data = data.map(color => ({
             ...color,
-            childRecord: color?._count.styleItems > 0
+            childRecord: color?._count.Item > 0
         })),
     };
 }
 
 
 async function getOne(id) {
-    const childRecord = await prisma.styleItem.count({ where: { hsnId: parseInt(id) } });
+    const childRecord = await prisma.Item.count({ where: { hsnId: parseInt(id) } });
     const data = await prisma.hsn.findUnique({
         where: {
             id: parseInt(id)

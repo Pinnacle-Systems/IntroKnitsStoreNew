@@ -1407,38 +1407,39 @@ model PurchaseInward {
 }
 
 model InwardItems {
-  id               Int             @id @default(autoincrement())
-  PurchaseInward   PurchaseInward? @relation(fields: [purchaseInwardId], references: [id], onDelete: Cascade)
-  purchaseInwardId Int?
-  Uom              Uom?            @relation(fields: [uomId], references: [id])
-  uomId            Int?
-  StyleItem        StyleItem?      @relation(fields: [styleItemId], references: [id])
-  styleItemId      Int?
-  Hsn              Hsn?            @relation(fields: [hsnId], references: [id])
-  hsnId            Int?
-  poQty            Float?
-  inwardQty        Float?
-  stocks           Stock[]
-  inwardType       String?
-  Po               Po?             @relation(fields: [poId], references: [id], onDelete: Cascade)
-  poId             Int?
-  batchNo          String?
-  invNo            String?
-  dcNo             String?
-  price            Float?
-  Itemgroup        ItemGroup?      @relation(fields: [itemGroupId], references: [id])
-  itemGroupId      Int?
-  Size             Size?           @relation(fields: [sizeId], references: [id])
-  sizeId           Int?
-  Color            Color?          @relation(fields: [colorId], references: [id])
-  colorId          Int?
-  discountType     String?
-  discountValue    Float?
-  taxPercent       Float?
-  Gsm              Gsm?            @relation(fields: [gsmId], references: [id])
-  gsmId            Int?
-  Item             Item?           @relation(fields: [itemId], references: [id])
-  itemId           Int?
+  id                 Int                  @id @default(autoincrement())
+  PurchaseInward     PurchaseInward?      @relation(fields: [purchaseInwardId], references: [id], onDelete: Cascade)
+  purchaseInwardId   Int?
+  Uom                Uom?                 @relation(fields: [uomId], references: [id])
+  uomId              Int?
+  StyleItem          StyleItem?           @relation(fields: [styleItemId], references: [id])
+  styleItemId        Int?
+  Hsn                Hsn?                 @relation(fields: [hsnId], references: [id])
+  hsnId              Int?
+  poQty              Float?
+  inwardQty          Float?
+  stocks             Stock[]
+  inwardType         String?
+  Po                 Po?                  @relation(fields: [poId], references: [id], onDelete: Cascade)
+  poId               Int?
+  batchNo            String?
+  invNo              String?
+  dcNo               String?
+  price              Float?
+  Itemgroup          ItemGroup?           @relation(fields: [itemGroupId], references: [id])
+  itemGroupId        Int?
+  Size               Size?                @relation(fields: [sizeId], references: [id])
+  sizeId             Int?
+  Color              Color?               @relation(fields: [colorId], references: [id])
+  colorId            Int?
+  discountType       String?
+  discountValue      Float?
+  taxPercent         Float?
+  Gsm                Gsm?                 @relation(fields: [gsmId], references: [id])
+  gsmId              Int?
+  Item               Item?                @relation(fields: [itemId], references: [id])
+  itemId             Int?
+  MaterialIssueItems MaterialIssueItems[]
 }
 
 model Location {
@@ -2774,6 +2775,8 @@ model MaterialIssueItems {
   Hsn                 Hsn?                  @relation(fields: [hsnId], references: [id])
   hsnId               Int?
   issueQty            String?
+  InwardItems         InwardItems?          @relation(fields: [inwardItemsId], references: [id])
+  inwardItemsId       Int?
   Stock               Stock[]
   MaterialReturnItems MaterialReturnItems[]
 }

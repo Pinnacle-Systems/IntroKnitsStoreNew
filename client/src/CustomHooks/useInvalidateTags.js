@@ -93,7 +93,7 @@ const useInvalidateTags = () => {
       payload: ["ItemCategoryMaster"],
     },
     {
-      type: `itemMaster/invalidateTags`,
+      type: `ItemMaster/invalidateTags`,
       payload: ["ItemMaster"],
     },
     {
@@ -189,6 +189,14 @@ const useInvalidateTags = () => {
     {
       type: `bankMaster/invalidateTags`,
       payload: ["bank"],
+    },
+    {
+      type: `MaterialIssue/invalidateTags`,
+      payload: ["MaterialIssue"],
+    },
+    {
+      type: `MaterialReturn/invalidateTags`,
+      payload: ["MaterialReturn"],
     },
   ];
 

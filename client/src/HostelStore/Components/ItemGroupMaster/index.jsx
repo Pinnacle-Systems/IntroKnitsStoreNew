@@ -85,6 +85,7 @@ export default function Form({ onSuccess, onClose, editId, deleteId, deleteLabel
   const handleSubmitCustom = async (callback, data, text, nextProcess) => {
     try {
       let returnData = await callback(data).unwrap();
+      setId("")
       if (onSuccess) {
         await Swal.fire({
           title: text + "  " + "Successfully",

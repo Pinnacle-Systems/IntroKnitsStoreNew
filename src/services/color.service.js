@@ -11,7 +11,7 @@ async function get(req) {
     include: {
       _count: {
         select: {
-          poItems: true,
+          purchaseReturnItems: true,
           inwardItems: true,
         },
       },
@@ -21,13 +21,13 @@ async function get(req) {
     statusCode: 0,
     data: (data = data.map((color) => ({
       ...color,
-      childRecord: color?._count.poItems + color?._count.inwardItems,
+      childRecord: color?._count.purchaseReturnItems + color?._count.inwardItems,
     }))),
   };
 }
 
 async function getOne(id) {
-  const childRecordPo = await prisma.poItems.count({
+  const childRecordPo = await prisma.purchaseReturnItems.count({
     where: { colorId: parseInt(id) },
   });
   const childRecordInward = await prisma.inwardItems.count({

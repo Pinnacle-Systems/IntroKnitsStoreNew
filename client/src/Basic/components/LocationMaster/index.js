@@ -578,7 +578,7 @@ export default function Form({
         <div className="flex items-center">
           <button
             onClick={handleCreate}
-            className="bg-white border font-segoe border-green-600 text-green-600 hover:bg-green-700 hover:text-white text-xs px-2  rounded-md shadow transition-colors duration-200 flex items-center gap-2"
+            className="bg-white border  border-indigo-600 text-indigo-600 hover:bg-indigo-700 hover:text-white text-xs px-2 py-1 rounded-md shadow transition-colors duration-200 flex items-center gap-2"
           >
             + Add New Location
           </button>

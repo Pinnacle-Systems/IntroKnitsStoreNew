@@ -13,7 +13,6 @@ import moment from "moment";
 import {
   findFromList,
   getCommonParams,
-  isGridDatasValid,
   ModeChip,
   renameFile,
 } from "../../../Utils/helper";
@@ -65,6 +64,7 @@ const PurchaseInwardForm = ({
   setFromPoType,
   taxTypeList,
   gsmList,
+  dispatchInvalidate
 }) => {
   const today = new Date();
 
@@ -98,7 +98,6 @@ const PurchaseInwardForm = ({
   const [attachments, setAttachments] = useState([]);
 
   const supplierRef = useRef(null);
-  const [dispatchInvalidate] = useInvalidateTags();
   const vehicleRef = useRef(null);
 
   const { userId, finYearId, branchId } = getCommonParams();
@@ -345,9 +344,45 @@ const PurchaseInwardForm = ({
     return duplicates; // empty array = no duplicates
   };
 
+  function isGridDatasValid(datas, isRequiredAllData, mandatoryFields = []) {
+    console.log(datas, "datas");
+    console.log(isRequiredAllData, "isRequiredAllData");
+    console.log(mandatoryFields, "mandatoryFields")
+
+    // If the array is empty, we consider it invalid because there must be at least one row.
+    if (!datas || datas.length === 0) {
+      return false;
+    }
+
+    const isInvalidValue = (value) => {
+      if (value === "" || value === null || value === undefined || value === "NaN") return true;
+      if (typeof value === "number" && isNaN(value)) return true;
+
+      // Treat strictly numeric zero values (like 0, "0", "0.00") as invalid.
+      // Number(value) evaluates to NaN for strings like "WRNWITRED05" or "0ABC", 
+      // so this safely allows alphanumeric barcodes to pass validation.
+      if (String(value).trim() !== "" && !isNaN(Number(value)) && Number(value) === 0) {
+        return true;
+      }
+
+      return false;
+    };
+
+    if (isRequiredAllData) {
+      return datas.every(obj => Object.values(obj).every(value => !isInvalidValue(value)));
+    } else {
+      return datas.every(obj =>
+        mandatoryFields.every(field => {
+          const value = obj[field];
+          return value !== undefined && !isInvalidValue(value);
+        })
+      );
+    }
+  }
+
   const validateData = (data) => {
     const items = data?.inwardItems || [];
-    const filledItems = items.filter((item) => item.styleItemId);
+    const filledItems = items.filter((item) => item.itemId);
     const isAgainstInvoice = data.receiptType === "Against Invoice";
     const isAmountMatched =
       Number(data?.netBillValue).toFixed(2) ===
@@ -360,11 +395,7 @@ const PurchaseInwardForm = ({
 
 
       {
-        condition: !isGridDatasValid(data?.inwardItems, false, [
-          "itemId",
-          "uomId",
-          "inwardQty",
-        ]),
+        condition: !isGridDatasValid(data?.inwardItems, false, ["itemGroupId", "itemId", "uomId", "inwardQty"]),
         title: "Please fill all required item fields!",
       },
 
@@ -377,6 +408,8 @@ const PurchaseInwardForm = ({
         })(),
       },
     ];
+
+
 
     const failed = checks.find((c) => c.condition);
     if (failed) {
@@ -410,14 +443,14 @@ const PurchaseInwardForm = ({
   const totals = enrichedItems?.totals || {};
 
   const saveData = (nextProcess) => {
+    console.log(isGridDatasValid(data?.inwardItems, false, ["itemGroupId", "itemId", "colorId", "sizeId", "uomId", "inwardQty"]), "inwardItemss")
     if (!validateData(data)) {
       return;
     }
-    if (id) {
-      if (!window.confirm("Are you sure update the details ...?")) {
-        return;
-      }
+    if (!window.confirm("Are you sure update the details ...?")) {
+      return;
     }
+
     if (nextProcess == "draft" && !id) {
       handleSubmitCustom(
         addData,

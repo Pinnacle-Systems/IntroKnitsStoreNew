@@ -67,6 +67,7 @@ const ProductionInwardForm = ({
     supplierList,
     taxTypeList,
     hasPermission,
+    dispatchInvalidate
 }) => {
     const today = new Date();
     const [docDate, setDocDate] = useState(moment.utc(today).format("YYYY-MM-DD"));
@@ -83,7 +84,6 @@ const ProductionInwardForm = ({
     const [dcDate, setDcDate] = useState("");
     const supplierRef = useRef(null);
     const childRecord = useRef(0);
-    const [dispatchInvalidate] = useInvalidateTags();
     const { userId, finYearId, branchId, companyId } = getCommonParams();
     const params = { branchId, companyId, finYearId };
     const [searchDocId, setSearchDocId] = useState("");
@@ -187,11 +187,6 @@ const ProductionInwardForm = ({
         setCurrentPageNumber(1);
     }, [searchDocId, searchDocDate, searchJobCard]);
 
-    useEffect(() => {
-        if (productionOutwardDtlsData?.data) {
-            syncFormWithDbItems(productionOutwardDtlsData?.data);
-        }
-    }, [isProductionOutwardDtlsLoading, isProductionOutwardDtlsFetching, syncFormWithDbItems, productionOutwardDtlsData]);
 
     useEffect(() => {
         if (id && singleData?.data) {
@@ -232,7 +227,7 @@ const ProductionInwardForm = ({
                     showConfirmButton: false,
                     timer: 2000,
                     didClose: () => {
-                        // dispatchInvalidate();
+                        dispatchInvalidate();
                         invalidateJobCardModule();
 
                         if (returnData.statusCode === 0) {
@@ -245,6 +240,8 @@ const ProductionInwardForm = ({
                             if (nextProcess === "close") {
                                 onClose();
                             }
+                            dispatchInvalidate();
+
                         } else {
                             toast.error(returnData?.message);
                         }

@@ -15,7 +15,8 @@ async function get(req) {
         include: {
             _count: {
                 select: {
-                    styleItems: true
+                    inwardItems: true,
+                    purchaseReturnItems: true
                 }
             }
         }
@@ -23,22 +24,32 @@ async function get(req) {
     return {
         statusCode: 0, data: data = data.map(color => ({
             ...color,
-            childRecord: color?._count.styleItems > 0
+            childRecord:
+                color._count.purchaseReturnItems +
+                color._count.inwardItems,
         })),
     };
 }
 
 
 async function getOne(id) {
-    const childRecord = await prisma.styleItem.count({ where: { uomId: parseInt(id) } });
-    // const childRecord = 0;
+    const childRecordPo = await prisma.purchaseReturnItems.count({
+        where: {
+            uomId: parseInt(id),
+        },
+    });
+    const childRecordInward = await prisma.inwardItems.count({
+        where: {
+            uomId: parseInt(id),
+        },
+    });    // const childRecord = 0;
     const data = await prisma.uom.findUnique({
         where: {
             id: parseInt(id)
         }
     })
     if (!data) return NoRecordFound("uom");
-    return { statusCode: 0, data: { ...data, ...{ childRecord } } };
+    return { statusCode: 0, data: { ...data, ...{ childRecord: childRecordPo + childRecordInward } } };
 
 }
 

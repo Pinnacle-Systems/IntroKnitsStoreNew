@@ -217,13 +217,29 @@ async function get(req) {
 
     },
     include: {
-      supplier: true
+      supplier: {
+        select: {
+          id: true
+          , name: true,
+          BranchType: {
+            select: {
+              name: true,
+            },
+          },
+          City: {
+            select: {
+              name: true,
+            },
+          },
+        }
+      },
+      _count: {
+        select: {
+          MaterialReturn: true,
+        }
+      },
+
     },
-    // _count: {
-    //   select: {
-    //     MaterialReturn: true,
-    //   }
-    // },
 
     orderBy: { docId: "desc" },
   });
@@ -244,7 +260,10 @@ async function get(req) {
 
   return {
     statusCode: 0,
-    data: data,
+    data: (data = data.map((item) => ({
+      ...item,
+      childRecord: item?._count.MaterialReturn,
+    }))),
     nextDocId: newDocId,
     totalCount,
   };
@@ -290,7 +309,7 @@ async function getOne(id) {
 
       return {
         ...item,
-        netQty: parseInt(stock._sum.qty || 0) + parseInt(item.issueQty || 0),
+        netQty: (parseInt(stock._sum.qty || 0) + parseInt(item.issueQty || 0)) - parseInt(returnQty || 0),
         alreadyReturnQty: returnQty || 0,
         balQty: parseInt(item.issueQty || 0) - parseInt(returnQty || 0),
       };
@@ -396,6 +415,7 @@ async function createIssueItems(
         uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
         hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
         issueQty: stockDetail?.issueQty ? (stockDetail.issueQty) : null,
+        inwardItemsId: stockDetail?.inwardItemsId ? parseInt(stockDetail.inwardItemsId) : null,
       },
     });
     await tx.stock.create({
@@ -521,6 +541,8 @@ async function updateinwardItems(
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
           issueQty: stockDetail?.issueQty ? (stockDetail.issueQty) : null,
+          inwardItemsId: stockDetail?.inwardItemsId ? parseInt(stockDetail.inwardItemsId) : null,
+
         },
       });
 
@@ -579,6 +601,8 @@ async function updateinwardItems(
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
           issueQty: stockDetail?.issueQty ? (stockDetail.issueQty) : null,
+          inwardItemsId: stockDetail?.inwardItemsId ? parseInt(stockDetail.inwardItemsId) : null,
+
         },
       });
       await tx.stock.create({

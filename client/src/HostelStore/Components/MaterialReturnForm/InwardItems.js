@@ -158,7 +158,7 @@ const IssueItems = ({
   };
 
   const handleDeleteAllRows = () => {
-    setInwardItems(Array.from({ length: 20 }, () => ({ ...EMPTY_ROW })));
+    setInwardItems(Array.from({ length: 16 }, () => ({ ...EMPTY_ROW })));
   };
 
   const handleRightClick = (event, rowIndex, type) => {
@@ -185,7 +185,7 @@ const IssueItems = ({
   useEffect(() => {
     // If edit mode (id exists)
     if (id && inwardItems?.length > 0) {
-      const requiredRows = 20;
+      const requiredRows = 16;
       const missingRows = requiredRows - inwardItems.length;
 
       if (missingRows > 0) {
@@ -198,7 +198,7 @@ const IssueItems = ({
 
     // If create mode (no id)
     if (!id && (!inwardItems || inwardItems.length === 0)) {
-      setInwardItems(Array.from({ length: 20 }, () => ({ ...EMPTY_ROW })));
+      setInwardItems(Array.from({ length: 16 }, () => ({ ...EMPTY_ROW })));
     }
   }, [id, inwardItems]);
 
@@ -375,7 +375,7 @@ const IssueItems = ({
                     Return Qty
                   </th>
                   <th
-                    className={`${compactHeaderCellClassName} w-12`}
+                    className={`${compactHeaderCellClassName} w-6`}
                   >
                     Actions
                   </th>
@@ -659,11 +659,11 @@ const IssueItems = ({
 
                 )}
               </tbody>
-              <tfoot>
-                <tr className="bg-gray-50 h-6 font-medium text-gray-800 text-[12px]">
+              <tfoot className="sticky bottom-0 z-10 shadow-[0_-1px_2px_rgba(0,0,0,0.05)]">
+                <tr className="bg-gray-200 h-6 font-medium text-gray-800 text-[12px]">
                   <td
                     className="text-right px-4 border border-gray-300 font-medium "
-                    colSpan={inwardType !== "Direct Inward" ? 7 : 7}
+                    colSpan={inwardType !== "Direct Inward" ? 7 : 8}
                   >
                     Total
                   </td>

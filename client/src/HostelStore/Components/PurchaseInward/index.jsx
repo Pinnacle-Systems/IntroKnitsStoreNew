@@ -26,7 +26,7 @@ export default function Form() {
   const [readOnly, setReadOnly] = useState(false);
   const { branchId, companyId, finYearId, userId } = getCommonParams()
   const params = {
-    branchId, companyId, finYearId
+    branchId, companyId, finYearId, isAddessCombined: true
   };
   const [fromPoSupplierId, setFromPoSupplierId] = useState(""); // ⬅️
   const [fromPoId, setFromPoId] = useState("");
@@ -218,6 +218,7 @@ export default function Form() {
           handleClose={handleClose}
           taxTypeList={taxTypeList}
           gsmList={gsmList}
+          dispatchInvalidate={dispatchInvalidate}
         />
       )}
     </>

@@ -134,7 +134,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
   };
 
   const validateData = (data) => {
-    if (data.name && data.itemGroupId  && data?.hsnId) {
+    if (data.name && data.itemGroupId && data?.hsnId) {
       return true;
     }
     return false;
@@ -372,7 +372,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
                     disabled={childRecord.current > 0}
                   />
                 </div>
-           
+
                 <DropdownWithModal
                   name="Item Group"
                   options={dropDownListObject(
@@ -390,7 +390,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
                   required={true}
                   readOnly={readOnly}
                   className={`w-[150px]`}
-                  // disabled={childRecord.current > 0}
+                  disabled={childRecord.current > 0}
                   addNewLabel="+ Add New Item Group"
                   childComponent={ItemGroup}
                   addNewModalWidth="w-[40%] h-[45%]"
@@ -416,9 +416,9 @@ export default function Form({ onSuccess, defaultName = "" }) {
                     required={true}
                   />
                 </div>
-   
-         
-            
+
+
+
                 <div className="mb-5">
                   <ToggleButton
                     name="Status"

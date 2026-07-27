@@ -221,14 +221,31 @@ async function get(req) {
     include: {
       Store: { select: { id: true, storeName: true } },
       inwardItems: {
-        include: { Po: { include: { poItems: true, quoteVersions: true } } },
+        include: {
+          Po: { include: { poItems: true, quoteVersions: true } },
+          MaterialIssueItems: true
+        },
       },
-      purchaseReturnItems: { select: { returnQty: true } },
-      purchaseBillEntryItems: { select: { inwardQty: true } },
-      supplier: { select: { id: true, name: true } },
-      _count: {
-        select: { purchaseReturnItems: true, purchaseBillEntryItems: true },
+
+
+      supplier: {
+        select: {
+          id: true
+          , name: true,
+          BranchType: {
+            select: {
+              name: true,
+            },
+          },
+          City: {
+            select: {
+              name: true,
+            },
+          },
+        }
       },
+
+
     },
     orderBy: { docId: "desc" },
   });
@@ -247,80 +264,24 @@ async function get(req) {
     );
   }
 
-  const ids = data.map((i) => i.id);
-  const { module, hasApproval } = await getModuleApprovalSetup(
-    REFERENCE_PAGE,
-    branchId,
-  );
 
-  const approvalLogs = hasApproval
-    ? await prisma.approvalLog.findMany({
-      where: { referencePage: REFERENCE_PAGE, referenceId: { in: ids } },
-      select: {
-        id: true,
-        referenceId: true,
-        status: true,
-        remarks: true,
-        currentLevel: true,
-        LevelLogs: {
-          select: {
-            action: true,
-            levelNo: true,
-            userId: true,
-            createdAt: true,
-            User: { select: { id: true, username: true } },
-          },
-          orderBy: { createdAt: "asc" },
-        },
-      },
-    })
-    : [];
 
-  const logMap = approvalLogs.reduce((acc, log) => {
-    acc[log.referenceId] = log;
-    return acc;
-  }, {});
 
-  // ✅ Fetch configs once for condition evaluation (same as PO service)
-  const activeConfigs =
-    hasApproval && module
-      ? await prisma.approvalConfig.findMany({
-        where: {
-          moduleId: module.id,
-          branchId: parseInt(branchId),
-          active: true,
-        },
-        include: {
-          ConfigConditions: {
-            include: { Field: true, Operator: true, CompareField: true },
-          },
-          approvalLevels: {
-            include: { LevelUsers: true },
-            orderBy: { levelNo: "asc" },
-          },
-        },
-        orderBy: { priority: "asc" },
-      })
-      : [];
+
+
+
 
   return {
     statusCode: 0,
     data: data.map((item) => {
-      const log = logMap[item.id] ?? null;
-
-      // ✅ FIX: evaluate per-record, not just hasApproval
-      let shouldTrigger = false;
-      if (!log && hasApproval && activeConfigs.length > 0) {
-        shouldTrigger = evaluateConfigs(activeConfigs, item);
-      }
+      const childRecordCount = item?.inwardItems?.reduce((acc, inwardItem) => {
+        return acc + (inwardItem?.MaterialIssueItems?.length || 0);
+      }, 0) || 0;
 
       return {
         ...item,
-        status: getPurchaseInwardStatus(item),
-        approvalStatus: getApprovalStatus(log, !!log || shouldTrigger),
-        childRecord:
-          item._count?.purchaseReturnItems +
-          item._count?.purchaseBillEntryItems,
+        childRecord: childRecordCount > 0 ? true : false,
+        childRecordCount
       };
     }),
     nextDocId: newDocId,
@@ -337,157 +298,24 @@ async function getOne(id) {
       Store: { select: { locationId: true, storeName: true } },
       Branch: { select: { branchName: true } },
       supplier: { select: { name: true } },
-      inwardItems: { include: { Po: { select: { docId: true } } } },
+      inwardItems: {
+        include: { Po: { select: { docId: true } }, MaterialIssueItems: true },
+
+      },
     },
   });
   if (!data) return NoRecordFound("Purchase Inward");
 
-  const itemsWithQty = await Promise.all(
-    data.inwardItems.map(async (item) => {
-      const [cancelAgg, inwardAgg, returnAgg] = await Promise.all([
-        prisma.purchaseCancelItems.aggregate({
-          where: {
-            styleItemId: item.styleItemId,
-            poId: item.poId,
-            uomId: item.uomId,
-            hsnId: item.hsnId,
-            itemGroupId: item.itemGroupId,
-            sizeId: item.sizeId,
-            colorId: item.colorId,
-            gsmId: item.gsmId,
-          },
-          _sum: { cancelQty: true },
-        }),
-        prisma.inwardItems.aggregate({
-          where: {
-            styleItemId: item.styleItemId,
-            poId: item.poId,
-            uomId: item.uomId,
-            hsnId: item.hsnId,
-            itemGroupId: item.itemGroupId,
-            sizeId: item.sizeId,
-            colorId: item.colorId,
-            purchaseInwardId: { not: data.id },
-            gsmId: item.gsmId,
-          },
-          _sum: { inwardQty: true },
-        }),
-        prisma.purchaseReturnItems.aggregate({
-          where: {
-            styleItemId: item.styleItemId,
-            uomId: item.uomId,
-            hsnId: item.hsnId,
-            itemGroupId: item.itemGroupId,
-            sizeId: item.sizeId,
-            colorId: item.colorId,
-            purchaseInwardId: data.id,
-            gsmId: item.gsmId,
-          },
-          _sum: { returnQty: true },
-        }),
-      ]);
-      return {
-        ...item,
-        alreadyCancelQty: cancelAgg?._sum?.cancelQty ?? 0,
-        alreadyInwardQty: inwardAgg?._sum?.inwardQty ?? 0,
-        alreadyReturnQty: returnAgg?._sum?.returnQty ?? 0,
-        balQty:
-          item.poQty -
-          ((inwardAgg?._sum?.inwardQty ?? 0) +
-            (cancelAgg?._sum?.cancelQty ?? 0)),
-      };
-    }),
-  );
 
-  const [childRecordReturn, childRecordBill, approvalLog] = await Promise.all([
-    prisma.purchaseReturnItems.count({ where: { purchaseInwardId: data.id } }),
-    prisma.purchaseBillEntryItems.count({
-      where: { purchaseInwardId: data.id },
-    }),
-    prisma.approvalLog.findFirst({
-      where: { referenceId: parseInt(id), referencePage: REFERENCE_PAGE },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        status: true,
-        currentLevel: true,
-        remarks: true,
-        ApprovalConfig: {
-          select: {
-            approvalLevels: {
-              orderBy: { levelNo: "asc" },
-              select: {
-                id: true,
-                levelNo: true,
-                approveType: true,
-                LevelUsers: {
-                  select: {
-                    userId: true,
-                    User: { select: { id: true, username: true } },
-                  },
-                },
-              },
-            },
-          },
-        },
-        LevelLogs: {
-          orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            levelNo: true,
-            action: true,
-            remarks: true,
-            createdAt: true,
-            User: { select: { id: true, username: true } },
-          },
-        },
-      },
-    }),
-  ]);
 
-  const { hasApproval, module } = await getModuleApprovalSetup(
-    REFERENCE_PAGE,
-    data.branchId,
-  );
 
-  // ✅ FIX: evaluate if THIS specific record triggers any config (same as PO getOne)
-  let isApprovalTriggered = false;
-  if (!approvalLog && hasApproval && module) {
-    const activeConfigs = await prisma.approvalConfig.findMany({
-      where: { moduleId: module.id, branchId: data.branchId, active: true },
-      include: {
-        ConfigConditions: {
-          include: { Field: true, Operator: true, CompareField: true },
-        },
-        approvalLevels: {
-          include: { LevelUsers: true },
-          orderBy: { levelNo: "asc" },
-        },
-      },
-      orderBy: { priority: "asc" },
-    });
-    isApprovalTriggered = activeConfigs
-      .filter(
-        (c) =>
-          c.approvalLevels?.length > 0 &&
-          c.approvalLevels.some((l) => l.LevelUsers?.length > 0),
-      )
-      .some((config) => evaluateConfigTrigger(config, data));
-  }
+
 
   return {
     statusCode: 0,
     data: {
       ...data,
-      inwardItems: itemsWithQty,
-      childRecord: childRecordReturn,
-      childRecordBill,
-      // ✅ FIX: use isApprovalTriggered not hasApproval
-      approvalStatus: getApprovalStatus(
-        approvalLog,
-        !!approvalLog || isApprovalTriggered,
-      ),
-      approvalLog: approvalLog ?? null,
+
     },
   };
 }

@@ -56,6 +56,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
 
   const syncFormWithDb = useCallback(
     (data) => {
+      console.log(id, "idddd")
       setName(data?.name ? data.name : defaultName || "");
       setIsPowise(id ? (data?.isPoWise ? data.isPoWise : false) : false);
       setActive(id ? (data?.active ? data.active : false) : true);
@@ -65,7 +66,11 @@ export default function Form({ onSuccess, defaultName = "" }) {
   );
 
   useEffect(() => {
-    syncFormWithDb(singleData?.data);
+    if (id && singleData?.data) {
+
+      syncFormWithDb(singleData?.data);
+    }
+
   }, [isSingleFetching, isSingleLoading, id, syncFormWithDb, singleData]);
 
   const data = {
@@ -98,22 +103,19 @@ export default function Form({ onSuccess, defaultName = "" }) {
       if (nextProcess == "new") {
         syncFormWithDb(undefined);
         onNew();
+        setId("")
         countryNameRef?.current?.focus()
 
       } else {
         setForm(false);
         syncFormWithDb(undefined);
+        setId("")
 
       }
       Swal.fire({
         title: text + "  " + "Successfully",
         icon: "success",
-        // draggable: true,
-        // timer: 1000,
-        // showConfirmButton: false,
-        // didOpen: () => {
-        //     Swal.showLoading();
-        // }
+
       });
       dispatchInvalidate();
 
@@ -222,6 +224,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
     setSearchValue("");
     setReadOnly(false);
     syncFormWithDb(undefined);
+    // setActive(true)
   };
 
   const ACTIVE = (

@@ -409,7 +409,10 @@ const PurchaseInwardFormReport = ({
 
                         <td className="py-1.5 text-left">
                           {" "}
-                          {dataObj?.supplier?.name}
+                          {`${dataObj?.supplier?.name}${dataObj?.supplier?.BranchType?.name
+                            ? ` / ${dataObj?.supplier?.BranchType?.name}`
+                            : ""
+                            }${dataObj?.supplier?.City?.name ? ` / ${dataObj?.supplier?.City?.name}` : ""}`}
                         </td>
                         {/* <td className="py-1.5 text-center">
                           <StatusBadge status={dataObj?.status} />

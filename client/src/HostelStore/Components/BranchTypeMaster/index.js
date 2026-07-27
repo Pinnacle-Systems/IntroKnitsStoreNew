@@ -76,20 +76,21 @@ export default function Form({
 
   const syncFormWithDb = useCallback(
     (data) => {
-      if (!id) {
-        setReadOnly(false);
-        setName("");
-        setCode("");
-        setActive(id ? (data?.active ?? true) : true);
-        childRecord.current = data?.childRecord ? data?.childRecord : 0;
-      } else {
-        // setReadOnly(true);
+      console.log(data, "datadata", id)
+      // if (!id) {
+      //   setReadOnly(false);
+      //   setName("");
+      //   setCode("");
+      //   setActive(id ? (data?.active ?? true) : true);
+      //   childRecord.current = data?.childRecord ? data?.childRecord : 0;
+      // } else {
+      //   // setReadOnly(true);
 
-        setName(data?.name || "");
-        setCode(data?.code || "");
-        setActive(id ? (data?.active ?? false) : true);
-        childRecord.current = data?.childRecord ? data?.childRecord : 0;
-      }
+      setName(data?.name || "");
+      setCode(data?.code || "");
+      setActive(id ? (data?.active ?? false) : true);
+      childRecord.current = data?.childRecord ? data?.childRecord : 0;
+      // }
     },
     [id],
   );
@@ -346,7 +347,7 @@ export default function Form({
                       setActive={setActive}
                       required={true}
                       readOnly={readOnly}
-                      disabled={childRecord.current > 0}
+                      disabled={readOnly}
                       onKeyDown={handlers.handleToggleKeyDown}
                     />
                   </div>
@@ -481,131 +482,7 @@ export default function Form({
   }
 
   return (
-    //         <div onKeyDown={handleKeyDown}>
-    //             <div className='w-full flex justify-between mb-2 items-center px-0.5'>
-    //                 <h5 className='my-1'>BranchType Master</h5>
-    //                <div className="flex items-center gap-4">
-    //                           <button
-    //                             onClick={() => {
-    //                               setForm(true);
-    //                               onNew();
-    //                             }}
-    //                             className="bg-white border text-xs border-indigo-600 text-indigo-600 hover:bg-indigo-700 hover:text-white text-sm px-4 py-1 rounded-md shadow transition-colors duration-200 flex items-center gap-2"
-    //                           >
-    //                             <Plus size={16} />
-    //                             Add New BranchType
-    //                           </button>
 
-    //                         </div>
-    //             </div>
-    //             <div className='w-full flex items-start'>
-    //                 <Mastertable
-    //                     header={'BranchType list'}
-    //                     searchValue={searchValue}
-    //                     setSearchValue={setSearchValue}
-    //                     onDataClick={onDataClick}
-    //                     tableHeaders={tableHeaders}
-    //                     tableDataNames={tableDataNames}
-    //                     data={allData?.data}
-    //                     // loading={
-    //                     //     isLoading || isFetching
-    //                     // }
-    //                     setReadOnly={setReadOnly}
-    //                     deleteData={deleteData}
-    //                 />
-    //             </div>
-
-    //          {form && (
-    //         <Modal
-    //           isOpen={form}
-    //           form={form}
-    //           widthClass={"w-[30%] max-w-6xl h-[50vh]"}
-    //           onClose={() => {
-    //             setForm(false);
-    //             setErrors({});
-    //           }}
-    //         >
-    //           <div className="h-full flex flex-col bg-[f1f1f0]">
-    //             <div className="border-b py-2 px-4 mx-3 flex justify-between items-center sticky top-0 z-10 bg-white">
-    //               <div className="flex items-center gap-2">
-    //                 <h2 className="text-lg px-2 py-0.5 font-semibold text-gray-800">
-    //                   {id ? (!readOnly ? "Edit BranchType Master" : "BranchType Master") : "Add New BranchType"}
-    //                 </h2>
-
-    //               </div>
-    //               <div className="flex gap-2">
-    //                 <div>
-    //                   {readOnly && (
-    //                     <button
-    //                       type="button"
-    //                       onClick={() => {
-    //                         setForm(false);
-    //                         setSearchValue("");
-    //                         setId(false);
-    //                       }}
-    //                       className="px-3 py-1 text-red-600 hover:bg-red-600 hover:text-white border border-red-600 text-xs rounded"
-    //                     >
-    //                       Cancel
-    //                     </button>
-    //                   )}
-    //                 </div>
-    //                 <div className="flex gap-2">
-    //                   {!readOnly && (
-    //                     <button
-    //                       type="button"
-    //                       onClick={saveData}
-    //                       className="px-3 py-1 hover:bg-green-600 hover:text-white rounded text-green-600
-    //                   border border-green-600 flex items-center gap-1 text-xs"
-    //                     >
-    //                       <Check size={14} />
-    //                       {id ? "Update" : "Save"}
-    //                     </button>
-    //                   )}
-    //                 </div>
-    //               </div>
-    //             </div>
-
-    //             <div className="flex-1 overflow-auto p-3">
-    //               <div className="grid grid-cols-1  gap-3  h-full">
-    //                 <div className="lg:col-span- space-y-3">
-    //                   <div className="bg-white p-3 rounded-md border border-gray-200 h-full">
-
-    //                     <div className="space-y-2 w-[50%]">
-
-    //                         <TextInput
-    //                             // ref={input1Ref}
-    //                             name="BranchType Name"
-    //                             type="text"
-    //                             value={name}
-    //                             setValue={setName}
-    //                             required={true}
-    //                             readOnly={readOnly}
-    //                             disabled={childRecord?.current > 0}
-    //                             // onKeyDown={(e) => handleKeyNext(e, input2Ref)}
-    //                           />
-
-    //                       {errors.name && <span className="text-red-500 text-xs ml-1">{errors.name}</span>}
-    // {/*
-    //                         <div className="">
-    //                           <TextInput name="Code" type="text" value={code} setValue={setCode} required={true} readOnly={readOnly}   disabled={childRecord.current > 0}/>
-    //                            </div> */}
-    //                         <div>
-    //                           <ToggleButton name="Status" options={statusDropdown} value={active} setActive={setActive} required={true} readOnly={readOnly}   disabled={childRecord.current > 0}  />
-    //                         </div>
-
-    //                     </div>
-    //                   </div>
-
-    //                 </div>
-
-    //               </div>
-    //             </div>
-
-    //           </div>
-
-    //         </Modal>
-    //       )}
-    //         </div>
 
     <div onKeyDown={handleKeyDown} className="p-1">
       <div className="w-full flex bg-white p-1 justify-between  items-center">
@@ -640,6 +517,7 @@ export default function Form({
             onClose={() => {
               setForm(false);
               syncFormWithDb(undefined);
+              setId("");
             }}
           >
             <div className="h-full flex flex-col bg-gray-200 ">

@@ -43,7 +43,7 @@ const index = () => {
             if (!window.confirm("Are you sure to delete...?")) return;
             try {
                 let deldata = await removeData(id).unwrap();
-                // dispatchInvalidate();
+                dispatchInvalidate();
                 invalidateJobCardModule();
 
                 if (deldata?.statusCode == 1) {
@@ -134,6 +134,7 @@ const index = () => {
                         branchList={branchList}
                         taxTypeList={taxTypeList}
                         hasPermission={hasPermission}
+                        dispatchInvalidate={dispatchInvalidate}
                     />
                 </div>
             )}

@@ -167,7 +167,7 @@ const IssueItems = ({
   };
 
   const handleDeleteAllRows = () => {
-    setInwardItems(Array.from({ length: 20 }, () => ({ ...EMPTY_ROW })));
+    setInwardItems(Array.from({ length: 16 }, () => ({ ...EMPTY_ROW })));
   };
 
   const handleRightClick = (event, rowIndex, type) => {
@@ -194,7 +194,7 @@ const IssueItems = ({
   useEffect(() => {
     // If edit mode (id exists)
     if (id && inwardItems?.length > 0) {
-      const requiredRows = 20;
+      const requiredRows = 16;
       const missingRows = requiredRows - inwardItems.length;
 
       if (missingRows > 0) {
@@ -207,7 +207,7 @@ const IssueItems = ({
 
     // If create mode (no id)
     if (!id && (!inwardItems || inwardItems.length === 0)) {
-      setInwardItems(Array.from({ length: 20 }, () => ({ ...EMPTY_ROW })));
+      setInwardItems(Array.from({ length: 16 }, () => ({ ...EMPTY_ROW })));
     }
   }, [id, inwardItems]);
 
@@ -392,7 +392,7 @@ const IssueItems = ({
                     Issue Qty
                   </th>
                   <th
-                    className={`${compactHeaderCellClassName} w-12`}
+                    className={`${compactHeaderCellClassName} w-6`}
                   >
                     Actions
                   </th>
@@ -402,15 +402,17 @@ const IssueItems = ({
 
                 {(inwardItems ? inwardItems : [])?.map((row, index) => {
 
-
+                  const alreadyReturnQty = row.alreadyReturnQty;
+                  const isAlreadyReturned = alreadyReturnQty > 0;
 
                   return (
                     <tr className={`${transactionTableRowClassName} ${contextMenu && contextMenu.rowId === index ? "!bg-blue-200" : (index % 2 === 0 ? "bg-white" : "bg-gray-100")} `}
                       onContextMenu={(e) => {
-                        if (!readOnly) {
+                        if (!readOnly && !isAlreadyReturned) {
                           handleRightClick(e, index, "shiftTimeHrs");
                         }
                       }}
+                      disabled={isAlreadyReturned}
                     >
                       <td className={transactionTableIndexCellClassName}>{index + 1}</td>
                       <td className={compactFocusCellClassName}>
@@ -610,7 +612,7 @@ const IssueItems = ({
                             handleInputChange(val ? Number(val).toFixed(2) : "", index, "issueQty", row);
                             setFocusedField(null);
                           }}
-                          disabled={(row.netQty ?? 0) <= 0 || readOnly}
+                          disabled={(row.netQty ?? 0) <= 0 || readOnly || isAlreadyReturned}
                           readOnly={readOnly}
                         />
                       </td>
@@ -618,17 +620,11 @@ const IssueItems = ({
                         <input
                           ref={(el) => (actionRefs.current[index] = el)}
                           className="w-full table-data-input"
+                          disabled={isAlreadyReturned}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               e.preventDefault();
-                              if (!receiptType) {
-                                Swal.fire({
-                                  title: "Please select Receipt Basis",
-                                  icon: "warning",
-                                  confirmButtonText: "OK",
-                                });
-                                return;
-                              }
+
                               if (inwardType === "Direct Inward") {
                                 if (index === inwardItems.length - 1) {
                                   addRow();
@@ -649,7 +645,6 @@ const IssueItems = ({
                               }
                             }
                           }}
-                          disabled={readOnly}
                         />
                       </td>
 
@@ -673,8 +668,8 @@ const IssueItems = ({
 
                 )}
               </tbody>
-              <tfoot>
-                <tr className="bg-gray-50 h-6 font-medium text-gray-800 text-[12px]">
+              <tfoot className="sticky bottom-0 z-10 shadow-[0_-1px_2px_rgba(0,0,0,0.05)]">
+                <tr className="bg-gray-200 h-6 font-medium text-gray-800 text-[12px]">
                   <td
                     className="text-right px-4 border border-gray-300 font-medium "
                     colSpan={inwardType !== "Direct Inward" ? 7 : 7}

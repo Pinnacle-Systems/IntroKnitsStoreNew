@@ -211,6 +211,8 @@ const MaterialReturnForm = ({
       setDcDate(
         data?.dcDate ? moment.utc(data.dcDate).format("YYYY-MM-DD") : "",
       );
+      setLocationId(data?.Store ? data.Store.locationId : branchId);
+
       setRemarks(data?.remarks || "");
       setDcNo(data?.dcNo ? data.dcNo : "");
       setVehicleNo(data?.vehicleNo ? data.vehicleNo : "");
@@ -885,7 +887,7 @@ const MaterialReturnForm = ({
                 autoFocus={true}
 
               />
-              {/* <DropdownWithModal
+              <DropdownWithModal
                 name="From Location"
                 options={dropDownListObject(
                   id
@@ -904,7 +906,7 @@ const MaterialReturnForm = ({
                 childComponent={LocationMaster}
                 addNewModalWidth="w-[40%] h-[48%]"
                 disabled={id}
-              /> */}
+              />
             </TransactionHeaderSection>
 
             <TransactionHeaderSection title="Customer Details" className="col-span-3 overflow-visible" bodyClassName="grid-cols-12 gap-1 overflow-visible">

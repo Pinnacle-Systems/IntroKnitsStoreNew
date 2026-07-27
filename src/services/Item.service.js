@@ -8,23 +8,32 @@ async function get(req) {
     where: {
       active: active ? Boolean(active) : undefined,
     },
-
+    include: {
+      _count: {
+        select: {
+          InwardItems: true,
+        },
+      },
+    },
   });
   return {
     statusCode: 0,
-    data: data,
+    data: (data = data.map((item) => ({
+      ...item,
+      childRecord: item?._count.InwardItems,
+    }))),
   };
 }
 
 async function getOne(id) {
-  const childRecordPo = await prisma.poItems.count({
-    where: { styleItemId: parseInt(id) },
+  const childRecordPo = await prisma.InwardItems.count({
+    where: { itemId: parseInt(id) },
   });
-  const childRecordInward = await prisma.inwardItems.count({
-    where: { styleItemId: parseInt(id) },
+  const childRecordInward = await prisma.MaterialIssueItems.count({
+    where: { itemId: parseInt(id) },
   });
-  const childRecordPI = await prisma.proformaInvoiceItem.count({
-    where: { styleItemId: parseInt(id) },
+  const childRecordPI = await prisma.MaterialReturnItems.count({
+    where: { itemId: parseInt(id) },
   });
   const data = await prisma.item.findUnique({
     where: {

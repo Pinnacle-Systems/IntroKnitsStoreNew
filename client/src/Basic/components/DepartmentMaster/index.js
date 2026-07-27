@@ -336,7 +336,7 @@ export default function Form({
                   value={active}
                   setActive={setActive}
                   readOnly={readOnly}
-                  disabled={childRecord.current > 0}
+                  disabled={readOnly}
                   ref={toggleButtonRef}
                   onKeyDown={handlers.handleToggleKeyDown}
                 />
@@ -454,54 +454,7 @@ export default function Form({
   }
 
   return (
-    // <div
-    //     onKeyDown={handleKeyDown}
-    //     className="md:items-start md:justify-items-center grid h-full bg-theme"
-    // >
-    //     <div className="flex flex-col frame w-full h-full">
-    //         <FormHeader
-    //             onNew={onNew}
-    //             onClose={() => {
-    //                 setForm(false);
-    //                 setSearchValue("");
-    //             }}
-    //             model={MODEL}
-    //             saveData={saveData}
-    //             setReadOnly={setReadOnly}
-    //             deleteData={deleteData}
 
-    //         />
-    //         <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-x-2 overflow-clip">
-    //             <div className="col-span-3 grid md:grid-cols-2 border overflow-auto">
-    //                 <div className='col-span-3 grid md:grid-cols-2 border overflow-auto'>
-    //                     <div className='mr-1 md:ml-2'>
-    //                         <fieldset className='frame my-1'>
-    //                             <legend className='sub-heading'>Department Info</legend>
-    //                             <div className='grid grid-cols-1 my-2'>
-    //                                 <TextInput name="Department Name" type="text" value={name} setValue={setName} required={true} readOnly={readOnly} disabled={(childRecord.current > 0)} />
-    //                                 <TextInput name="Code" type="text" value={code} setValue={setCode} required={true} readOnly={readOnly} disabled={(childRecord.current > 0)} />
-    //                                 <CheckBox name="Active" readOnly={readOnly} value={active} setValue={setActive} />
-    //                             </div>
-    //                         </fieldset>
-    //                     </div>
-    //                 </div>
-    //             </div>
-    //             <div className="frame hidden md:block overflow-x-hidden">
-    //                 <FormReport
-    //                     searchValue={searchValue}
-    //                     setSearchValue={setSearchValue}
-    //                     setId={setId}
-    //                     tableHeaders={tableHeaders}
-    //                     tableDataNames={tableDataNames}
-    //                     data={allData?.data}
-    //                     loading={
-    //                         isLoading || isFetching
-    //                     }
-    //                 />
-    //             </div>
-    //         </div>
-    //     </div>
-    // </div>
     <div onKeyDown={handleKeyDown} className="p-1">
       <div className="w-full flex bg-white p-1 justify-between  items-center">
         <h5 className="text-lg font-bold text-gray-800">Department Master</h5>
@@ -535,6 +488,7 @@ export default function Form({
             onClose={() => {
               setForm(false);
               syncFormWithDb(undefined);
+              setId("")
             }}
           >
             <div className="h-full flex flex-col bg-gray-200 ">

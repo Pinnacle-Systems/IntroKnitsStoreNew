@@ -21,6 +21,7 @@ import Modal from "../../../UiComponents/Modal";
 import { useFormKeyboardNavigation } from "../../../CustomHooks/useFormKeyboardNavigation";
 import useInvalidateTags from "../../../CustomHooks/useInvalidateTags";
 import { UserPermissions } from "../../../Utils/UserPermissions";
+import { statusDropdown } from "../../../Utils/DropdownData";
 
 export default function Form({ onSuccess, defaultName = "" }) {
   const [form, setForm] = useState(false);
@@ -92,6 +93,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
   );
 
   useEffect(() => {
+    if (!id) return
     syncFormWithDb(singleData?.data);
   }, [isSingleFetching, isSingleLoading, id, syncFormWithDb, singleData]);
 
@@ -125,9 +127,13 @@ export default function Form({ onSuccess, defaultName = "" }) {
       if (nextProcess == "new") {
         syncFormWithDb(undefined);
         onNew();
+        setId("");
+
         countryNameRef?.current?.focus();
       } else {
         setForm(false);
+        setId("");
+
         syncFormWithDb(undefined);
       }
       Swal.fire({
@@ -334,19 +340,16 @@ export default function Form({ onSuccess, defaultName = "" }) {
                     ref={countryNameRef}
                     onKeyDown={handlers.handleLastInputKeyDown}
                   />
-                  {/* <div className="grid grid-cols-2">
-                                                   <TextInput name="Pantone" type="text" value={pantone} setValue={setPantone} required={true} readOnly={readOnly} disabled={(childRecord.current > 0)} />
-                                                   <div className={`h-20 w-32`} style={{ backgroundColor: pantone }}></div>
-                                               </div> */}
-                  {/* <CheckBox name="Grey" readOnly={readOnly} value={isGrey} setValue={setIsGrey} /> */}
 
                   <ToggleButton
-                    name="Active"
-                    readOnly={readOnly}
+                    name="Status"
+                    options={statusDropdown}
                     value={active}
-                    setValue={setActive}
-                    onKeyDown={handlers.handleToggleKeyDown}
+                    setActive={setActive}
+                    readOnly={readOnly}
+                    disabled={readOnly}
                     ref={toggleButtonRef}
+                    onKeyDown={handlers.handleToggleKeyDown}
                   />
                 </fieldset>
                 <div></div>

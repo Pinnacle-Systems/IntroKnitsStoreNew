@@ -12,9 +12,8 @@ async function get(req) {
     include: {
       _count: {
         select: {
-          sizeTemplateLists: true,
-          poItems: true,
           inwardItems: true,
+          purchaseReturnItems: true
         },
       },
     },
@@ -25,8 +24,7 @@ async function get(req) {
       return {
         ...item,
         childRecord:
-          item._count.sizeTemplateLists +
-          item._count.poItems +
+          item._count.purchaseReturnItems +
           item._count.inwardItems,
       };
     }),
@@ -34,7 +32,7 @@ async function get(req) {
 }
 
 async function getOne(id) {
-  const childRecordPo = await prisma.poItems.count({
+  const childRecordPo = await prisma.purchaseReturnItems.count({
     where: {
       sizeId: parseInt(id),
     },

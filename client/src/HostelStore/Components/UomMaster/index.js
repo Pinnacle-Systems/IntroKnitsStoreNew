@@ -330,7 +330,7 @@ export default function Form({
                       setActive={setActive}
                       required={true}
                       readOnly={readOnly}
-                      disabled={childRecord.current > 0}
+                      disabled={readOnly}
                       ref={toggleButtonRef}
                       onKeyDown={handlers.handleToggleKeyDown}
                     />
@@ -483,7 +483,7 @@ export default function Form({
           <Modal
             isOpen={form}
             form={form}
-            widthClass={"w-[40%] h-[50%]"}
+            widthClass={"w-[45%] h-[50%]"}
             onClose={() => {
               setForm(false);
               syncFormWithDb(undefined);
