@@ -120,6 +120,11 @@ const InwardItems = ({
   };
 
   const handleDeleteAllRows = () => {
+    const childRecord = inwardItems?.some((row) => (row.MaterialIssueItems?.length > 0))
+    if (childRecord) {
+      toast.error("This entry is already in use");
+      return;
+    }
     setInwardItems(Array.from({ length: 4 }, () => ({ ...EMPTY_ROW })));
   };
 
@@ -815,16 +820,19 @@ const InwardItems = ({
                 }}
               >
                 Delete
-              </button>
-              <button
-                className=" text-black text-[12px] text-left rounded px-1"
-                onClick={() => {
-                  handleDeleteAllRows();
-                  handleCloseContextMenu();
-                }}
-              >
-                Delete All
-              </button>
+              </button>{console.log(inwardItems.some((row) => row?.MaterialIssueItems?.length > 0), "childRecord")}
+              {!(inwardItems?.some((row) => (row.MaterialIssueItems?.length > 0))) && (
+                <button
+                  className=" text-black text-[12px] text-left rounded px-1"
+                  onClick={() => {
+                    handleDeleteAllRows();
+                    handleCloseContextMenu();
+                  }}
+                >
+                  Delete All
+                </button>
+              )}
+
             </div>
           </div>
         )}

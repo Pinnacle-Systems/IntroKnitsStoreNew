@@ -717,15 +717,17 @@ const IssueItems = ({
                   >
                     Delete{" "}
                   </button>
-                  <button
-                    className=" text-black text-[12px] text-left rounded px-1"
-                    onClick={() => {
-                      handleDeleteAllRows();
-                      handleCloseContextMenu();
-                    }}
-                  >
-                    Delete All
-                  </button>
+                  {!(inwardItems?.some((row) => (row.alreadyReturnQty > 0))) && (
+                    <button
+                      className=" text-black text-[12px] text-left rounded px-1"
+                      onClick={() => {
+                        handleDeleteAllRows();
+                        handleCloseContextMenu();
+                      }}
+                    >
+                      Delete All
+                    </button>
+                  )}
                 </div>
               </div>
             )}
