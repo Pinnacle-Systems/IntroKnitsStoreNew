@@ -7,26 +7,57 @@ import React, { useMemo, useRef, useState } from "react";
 import { useGetStockReportQuery } from "../../../redux/services/StockService";
 import ColumnFilterMenu from "./ColumnFilterMenu";
 import XLSXStyle from "xlsx-js-style";
-import mpLogo from "../../../assets/mplogo.png";
-import { STOCK_COLUMNS, QTY_KEYS, buildGroups, fmt3 } from "./stockReportUtils";
+import mpLogo from "../../../assets/Iknitslogo.png";
+import {
+  STOCK_COLUMNS,
+  QTY_KEYS,
+  buildGroups,
+  fmt3,
+  fmt2,
+} from "./stockReportUtils";
+import { getCommonParams } from "../../../Utils/helper";
 
 const PAGE_SIZE = 40;
 const EXCEL_NUM_FMT = "#,##0.000";
 
 export default function StockReport() {
-  const [queryParams] = useState({ branchId: undefined });
+  const { branchId } = getCommonParams();
+
+  const [viewMode, setViewMode] = useState("qty"); // "qty" | "value"
+
+  const queryParams = useMemo(
+    () => ({
+      branchId,
+      isShowStockPriceWise: viewMode === "value",
+    }),
+    [branchId, viewMode],
+  );
+
   const {
     data: apiData,
     isLoading,
     isFetching,
     isError,
-  } = useGetStockReportQuery(queryParams);
+  } = useGetStockReportQuery({ params: queryParams });
 
   const allData = useMemo(() => apiData?.data || [], [apiData]);
 
+  const activeStockColumns = useMemo(() => {
+    if (viewMode === "value") {
+      return STOCK_COLUMNS;
+    }
+    return STOCK_COLUMNS.filter(
+      (c) => c.key !== "price" && c.key !== "totalValue",
+    );
+  }, [viewMode]);
+
   const [colOrder, setColOrder] = useState(() =>
-    STOCK_COLUMNS.map((c) => c.key),
+    activeStockColumns.map((c) => c.key),
   );
+
+  React.useEffect(() => {
+    setColOrder(activeStockColumns.map((c) => c.key));
+  }, [activeStockColumns]);
   const [groupKeys, setGroupKeys] = useState([]);
   const [groupDirs, setGroupDirs] = useState({});
   const [collapsed, setCollapsed] = useState({});
@@ -102,7 +133,14 @@ export default function StockReport() {
   const metrics = useMemo(
     () => ({
       totalItems: filtered.length,
-      totalNetQty: filtered.reduce((s, r) => s + r.netQty, 0),
+      totalNetQty: filtered.reduce(
+        (s, r) => s + (parseFloat(r.netQty) || 0),
+        0,
+      ),
+      totalValue: filtered.reduce(
+        (s, r) => s + (parseFloat(r.totalValue) || 0),
+        0,
+      ),
     }),
     [filtered],
   );
@@ -198,6 +236,20 @@ export default function StockReport() {
         </div>
       );
     }
+    if (key === "price") {
+      return (
+        <div className="text-xs text-right font-medium text-gray-700">
+          {fmt2(row.price)}
+        </div>
+      );
+    }
+    if (key === "totalValue") {
+      return (
+        <div className="text-xs text-right font-semibold text-emerald-700">
+          {fmt2(row.totalValue)}
+        </div>
+      );
+    }
     return <span className="text-xs text-gray-600">{row[key] ?? "—"}</span>;
   }
 
@@ -214,8 +266,10 @@ export default function StockReport() {
         return n._group ? n._children.flatMap(collectRows) : [n];
       }
       const groupRows = collectRows(node);
+      const activeSumKeys =
+        viewMode === "value" ? ["netQty", "totalValue"] : ["netQty"];
       const qtyTotals = {};
-      QTY_KEYS.forEach((k) => {
+      activeSumKeys.forEach((k) => {
         qtyTotals[k] = groupRows.reduce(
           (s, r) => s + (parseFloat(r[k]) || 0),
           0,
@@ -244,25 +298,30 @@ export default function StockReport() {
                 — {node._count} item{node._count !== 1 ? "s" : ""}
               </span>
               <span className="ml-3 inline-flex flex-wrap gap-2">
-                {QTY_KEYS.filter((k) => qtyTotals[k] !== 0).map((k) => {
-                  const label =
-                    STOCK_COLUMNS.find((c) => c.key === k)?.label || k;
-                  const isNeg = qtyTotals[k] < 0;
-                  return (
-                    <span
-                      key={k}
-                      className={`border rounded-full px-2 py-0.5 text-[10px] font-medium
-                      ${k === "netQty"
+                {activeSumKeys
+                  .filter((k) => qtyTotals[k] !== 0)
+                  .map((k) => {
+                    const isNetQty = k === "netQty";
+                    const label =
+                      STOCK_COLUMNS.find((c) => c.key === k)?.label || k;
+                    const isNeg = qtyTotals[k] < 0;
+                    const displayVal = isNetQty
+                      ? fmt3(qtyTotals[k])
+                      : `₹ ${fmt2(qtyTotals[k])}`;
+                    return (
+                      <span
+                        key={k}
+                        className={`border rounded-full px-2 py-0.5 text-[10px] font-medium ${isNetQty
                           ? isNeg
                             ? "bg-red-50 border-red-200 text-red-600"
                             : "bg-green-50 border-green-200 text-green-600"
-                          : "bg-white border-indigo-200 text-indigo-600"
-                        }`}
-                    >
-                      {label}: {fmt3(qtyTotals[k])}
-                    </span>
-                  );
-                })}
+                          : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                          }`}
+                      >
+                        {label}: {displayVal}
+                      </span>
+                    );
+                  })}
               </span>
             </td>
           </tr>
@@ -352,12 +411,13 @@ export default function StockReport() {
 
     function qtyCell(k, val, bg = null) {
       const numVal = typeof val === "number" ? val : parseFloat(val) || 0;
+      const isVal = k === "totalValue" || k === "price";
       return cell(numVal, {
-        fontColor: "15803D", // always green — backend guarantees positive
+        fontColor: k === "totalValue" ? "047857" : "15803D",
         bold: true,
         align: "right",
         indent: 0,
-        numFmt: EXCEL_NUM_FMT,
+        numFmt: isVal ? "#,##0.00" : EXCEL_NUM_FMT,
         fgColor: bg,
       });
     }
@@ -375,15 +435,22 @@ export default function StockReport() {
           return n._group ? n._children.flatMap(collectRows) : [n];
         }
         const gRows = collectRows(node);
+        const activeSumKeys =
+          viewMode === "value" ? ["netQty", "totalValue"] : ["netQty"];
         const qtyTotals = {};
-        QTY_KEYS.forEach((k) => {
+        activeSumKeys.forEach((k) => {
           qtyTotals[k] = gRows.reduce((s, r) => s + (parseFloat(r[k]) || 0), 0);
         });
-        const qtyStr = QTY_KEYS.filter((k) => qtyTotals[k] !== 0)
-          .map(
-            (k) =>
-              `${STOCK_COLUMNS.find((c) => c.key === k)?.label || k}: ${Number(qtyTotals[k]).toFixed(3)}`,
-          )
+        const qtyStr = activeSumKeys
+          .filter((k) => qtyTotals[k] !== 0)
+          .map((k) => {
+            const lbl = STOCK_COLUMNS.find((c) => c.key === k)?.label || k;
+            const val =
+              k === "totalValue"
+                ? Number(qtyTotals[k]).toFixed(2)
+                : Number(qtyTotals[k]).toFixed(3);
+            return `${lbl}: ${val}`;
+          })
           .join("  |  ");
         const label = `${col?.label || node._key}: ${node._val || "(blank)"}  —  ${node._count} item${node._count !== 1 ? "s" : ""}${qtyStr ? "  |  " + qtyStr : ""}`;
         const bg = GROUP_BG[depth] || "F6F6F6";
@@ -415,7 +482,8 @@ export default function StockReport() {
               indent: 0,
               fgColor: bg,
             });
-          if (QTY_KEYS.includes(k)) return qtyCell(k, r[k], bg);
+          if (QTY_KEYS.includes(k) || k === "price" || k === "totalValue")
+            return qtyCell(k, r[k], bg);
           return cell(String(r[k] ?? ""), { fgColor: bg, fontColor: "1F2937" });
         });
         allSheetRows.push({ cells: dataRow, isGroup: false, depth: 0 });
@@ -436,7 +504,10 @@ export default function StockReport() {
         fgColor: "F3F4F6",
         fontColor: "000000",
         align:
-          QTY_KEYS.includes(allKeys[i]) || allKeys[i] === "sno"
+          QTY_KEYS.includes(allKeys[i]) ||
+            allKeys[i] === "price" ||
+            allKeys[i] === "totalValue" ||
+            allKeys[i] === "sno"
             ? "center"
             : "left",
         fontSize: 10,
@@ -470,20 +541,15 @@ export default function StockReport() {
     const COL_WIDTHS = {
       sno: 6,
       store: 25,
-      styleItem: 35,
+      item: 35,
       itemGroup: 25,
       size: 20,
       color: 20,
       gsm: 12,
       uom: 15,
-      openingQty: 13,
-      inwardQty: 13,
-      poBillQty: 13,
-      poReturnQty: 13,
-      salesReturnQty: 14,
-      salesQty: 13,
-      purchaseReturnQty: 14,
       netQty: 14,
+      price: 14,
+      totalValue: 16,
     };
     ws["!cols"] = allKeys.map((k) => ({ wch: COL_WIDTHS[k] || 14 }));
     ws["!rows"] = [
@@ -552,13 +618,78 @@ export default function StockReport() {
         style={{ height: "90vh" }}
       >
         {/* top bar */}
-        <div className="flex items-center justify-between flex-wrap gap-3 bg-white py-0.5 px-2 rounded-lg no-print">
-          <h2 className="text-base font-medium text-gray-800">Stock Report</h2>
-          {/* <div className="flex gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-3 bg-white py-1.5 px-3 rounded-xl border border-gray-100 shadow-sm no-print">
+          <div className="flex items-center gap-4">
+            <h2 className="text-base font-semibold text-gray-800">
+              Stock Report
+            </h2>
+
+            {/* Qty Wise vs Value Wise Toggle Switch */}
+            <div className="inline-flex p-0.5 bg-gray-100 rounded-lg border border-gray-200 text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode("qty");
+                  setPage(1);
+                }}
+                className={`px-3 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 ${viewMode === "qty"
+                  ? "bg-indigo-600 text-white shadow-sm font-semibold"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
+                  }`}
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                  />
+                </svg>
+                Qty Wise
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setViewMode("value");
+                  setPage(1);
+                }}
+                className={`px-3 py-1 rounded-md transition-all duration-200 flex items-center gap-1.5 ${viewMode === "value"
+                  ? "bg-indigo-600 text-white shadow-sm font-semibold"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/60"
+                  }`}
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Value Wise
+              </button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
             <button
               onClick={exportExcel}
-              className="h-8 px-3 text-xs border border-green-300 rounded-lg text-green-600 hover:bg-green-50"
+              className="h-8 px-3 text-xs font-medium border border-emerald-300 rounded-lg text-emerald-700 bg-emerald-50 hover:bg-emerald-100 flex items-center gap-1.5 transition-colors shadow-sm"
             >
+              <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
               Download Excel
             </button>
             <button
@@ -575,11 +706,14 @@ export default function StockReport() {
                 window.print();
                 document.title = prev;
               }}
-              className="h-8 px-3 text-xs border border-red-300 rounded-lg text-red-600 hover:bg-red-50"
+              className="h-8 px-3 text-xs font-medium border border-rose-300 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 flex items-center gap-1.5 transition-colors shadow-sm"
             >
+              <svg className="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
               Print PDF
             </button>
-          </div> */}
+          </div>
         </div>
 
         {/* print header */}
@@ -621,14 +755,38 @@ export default function StockReport() {
               val: metrics.totalItems,
               color: "text-gray-700",
               bg: "bg-gray-100",
+              icon: (
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              ),
             },
-
             {
               label: "Total Net Qty",
               val: fmt3(metrics.totalNetQty),
               color: "text-indigo-700",
               bg: "bg-indigo-50",
+              icon: (
+                <>
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <path d="M3.3 7l8.7 5 8.7-5M12 22V12" />
+                </>
+              ),
             },
+            ...(viewMode === "value"
+              ? [
+                {
+                  label: "Total Stock Value",
+                  val: `₹ ${fmt2(metrics.totalValue)}`,
+                  color: "text-emerald-700",
+                  bg: "bg-emerald-50",
+                  icon: (
+                    <>
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </>
+                  ),
+                },
+              ]
+              : []),
           ].map((m) => (
             <div
               key={m.label}
@@ -646,8 +804,7 @@ export default function StockReport() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                  <path d="M3.3 7l8.7 5 8.7-5M12 22V12" />
+                  {m.icon}
                 </svg>
               </div>
               <div className="min-w-0">
@@ -739,7 +896,7 @@ export default function StockReport() {
         >
           <table
             className="w-full table-fixed border-collapse"
-            style={{ width: "1550px" }}
+            style={{ width: viewMode === "value" ? "1700px" : "1550px" }}
           >
             <thead className="bg-gray-100 sticky top-0 z-10">
               <tr>
@@ -887,16 +1044,7 @@ export default function StockReport() {
             </div>
           )}
 
-          {/* <div className="flex gap-3 flex-wrap">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-red-200 inline-block" />
-              Negative stock
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-green-200 inline-block" />
-              Positive stock
-            </span>
-          </div> */}
+
         </div>
       </div>
     </>

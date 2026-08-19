@@ -79,6 +79,8 @@ import {
   item,
   materialIssue,
   materialReturn,
+  line,
+  orderMaster,
 } from "./src/routes/index.js";
 import { setIo } from "./src/utils/notificationHelper.js";
 import { socketMain } from "./src/sockets/socket.js";
@@ -190,6 +192,8 @@ app.use("/itemSubGroup", itemSubGroup);
 app.use("/item", item);
 app.use("/materialIssue", materialIssue);
 app.use("/materialReturn", materialReturn);
+app.use("/lineMaster", line);
+app.use("/orderMaster", orderMaster);
 
 
 

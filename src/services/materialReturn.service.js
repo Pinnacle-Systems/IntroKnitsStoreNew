@@ -332,6 +332,9 @@ async function create(body) {
     draftSave,
     productionType,
     issueId,
+    orderId,
+    departmentId,
+    employeeId,
   } = await body;
 
   console.log(body, "body")
@@ -352,15 +355,17 @@ async function create(body) {
         locationId: parseInt(storeId),
         supplierId: parseInt(supplierId),
         productionType,
-        materialIssueId: issueId ? parseInt(issueId) : null
-
+        materialIssueId: issueId ? parseInt(issueId) : null,
+        orderId: orderId ? parseInt(orderId) : null,
+        departmentId: departmentId ? parseInt(departmentId) : null,
+        employeeId: employeeId ? parseInt(employeeId) : null,
 
       },
     });
 
     const inwardItems = typeof rawInwardItems === "string" ? JSON.parse(rawInwardItems) : rawInwardItems;
 
-    await createReturnItems(tx, inwardItems, data, userId, storeId, issueId, branchId);
+    await createReturnItems(tx, inwardItems, data, userId, storeId, issueId, branchId, orderId, departmentId, employeeId);
 
   });
 
@@ -379,7 +384,10 @@ async function createReturnItems(
   userId,
   storeId,
   issueId,
-  branchId
+  branchId,
+  orderId,
+  departmentId,
+  employeeId,
 ) {
   const promises = inwardItems?.map(async (stockDetail) => {
     const createdItem = await tx.MaterialReturnItems.create({
@@ -394,7 +402,9 @@ async function createReturnItems(
         hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
         returnQty: stockDetail?.returnQty ? String(stockDetail.returnQty) : null,
         materialIssueId: issueId ? parseInt(issueId) : null,
-        materialIssueItemsId: stockDetail?.id ? parseInt(stockDetail.id) : null
+        materialIssueItemsId: stockDetail?.id ? parseInt(stockDetail.id) : null,
+        price: stockDetail?.price ? (stockDetail.price) : null,
+
       },
     });
     await tx.stock.create({
@@ -411,7 +421,11 @@ async function createReturnItems(
         uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
         qty: stockDetail?.returnQty ? parseInt(stockDetail.returnQty) : null,
         inwardType: "MaterialIssue" || "",
-        branchId: branchId ? parseInt(branchId) : null
+        branchId: branchId ? parseInt(branchId) : null,
+        orderId: orderId ? parseInt(orderId) : null,
+        departmentId: departmentId ? parseInt(departmentId) : null,
+        employeeId: employeeId ? parseInt(employeeId) : null,
+        price: stockDetail?.price ? (stockDetail.price) : null,
 
       },
     });
@@ -439,8 +453,10 @@ async function update(id, body, files) {
     supplierId,
     inwardItems: rawInwardItems,
     productionType,
-    issueId
-
+    issueId,
+    orderId,
+    departmentId,
+    employeeId,
   } = await body;
 
 
@@ -484,11 +500,14 @@ async function update(id, body, files) {
         locationId: parseInt(storeId),
         supplierId: parseInt(supplierId),
         productionType,
+        orderId: orderId ? parseInt(orderId) : null,
+        departmentId: departmentId ? parseInt(departmentId) : null,
+        employeeId: employeeId ? parseInt(employeeId) : null,
 
       },
     });
 
-    await updateinwardItems(tx, inwardItems, data, userId, storeId, issueId, branchId);
+    await updateinwardItems(tx, inwardItems, data, userId, storeId, issueId, branchId, orderId, departmentId, employeeId);
 
 
   });
@@ -506,7 +525,10 @@ async function updateinwardItems(
   userId,
   storeId,
   issueId,
-  branchId
+  branchId,
+  orderId,
+  departmentId,
+  employeeId,
 ) {
   const promises = inwardItems?.map(async (stockDetail) => {
     if (stockDetail.id) {
@@ -522,6 +544,8 @@ async function updateinwardItems(
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
           returnQty: stockDetail?.returnQty ? String(stockDetail.returnQty) : null,
           materialIssueId: issueId ? parseInt(issueId) : null,
+          price: stockDetail?.price ? (stockDetail.price) : null,
+
         },
       });
 
@@ -544,7 +568,11 @@ async function updateinwardItems(
             uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
             qty: stockDetail?.returnQty ? parseInt(stockDetail.returnQty) : null,
             inwardType: "MaterialReturn" || "",
-            branchId: branchId ? parseInt(branchId) : null
+            branchId: branchId ? parseInt(branchId) : null,
+            orderId: orderId ? parseInt(orderId) : null,
+            departmentId: departmentId ? parseInt(departmentId) : null,
+            employeeId: employeeId ? parseInt(employeeId) : null,
+            price: stockDetail?.price ? (stockDetail.price) : null,
 
           },
         });
@@ -563,7 +591,11 @@ async function updateinwardItems(
             uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
             qty: stockDetail?.issueQty ? parseInt(stockDetail.issueQty) : null,
             inwardType: "MaterialReturn" || "",
-            branchId: branchId ? parseInt(branchId) : null
+            branchId: branchId ? parseInt(branchId) : null,
+            orderId: orderId ? parseInt(orderId) : null,
+            departmentId: departmentId ? parseInt(departmentId) : null,
+            employeeId: employeeId ? parseInt(employeeId) : null,
+            price: stockDetail?.price ? (stockDetail.price) : null,
 
           },
         });
@@ -581,7 +613,8 @@ async function updateinwardItems(
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
           returnQty: stockDetail?.returnQty ? String(stockDetail.returnQty) : null,
           materialIssueId: issueId ? parseInt(issueId) : null,
-          materialIssueItemsId: stockDetail?.id ? parseInt(stockDetail.id) : null
+          materialIssueItemsId: stockDetail?.id ? parseInt(stockDetail.id) : null,
+          price: stockDetail?.price ? (stockDetail.price) : null,
 
         },
       });
@@ -599,7 +632,11 @@ async function updateinwardItems(
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           qty: stockDetail?.issueQty ? parseInt(0 - stockDetail.issueQty) : null,
           inwardType: "MaterialReturn" || "",
-          branchId: branchId ? parseInt(branchId) : null
+          branchId: branchId ? parseInt(branchId) : null,
+          orderId: orderId ? parseInt(orderId) : null,
+          departmentId: departmentId ? parseInt(departmentId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+          price: stockDetail?.price ? (stockDetail.price) : null,
 
         },
       });

@@ -90,6 +90,9 @@ import {
   SalesDelivery,
   MaterialIssue,
   MaterialReturn,
+  OrderMaster,
+  LineMaster,
+  OrdersReport,
 } from "../../../HostelStore/Components";
 
 const ActiveTabList = () => {
@@ -184,7 +187,10 @@ const ActiveTabList = () => {
     "ITEM SUB GROUP MASTER": <ItemSubGroupMaster />,
     "MATERIAL ISSUE": <MaterialIssue />,
     "MATERIAL RETURN": <MaterialReturn />,
-    
+    "ORDER MASTER": <OrderMaster />,
+    "LINE MASTER": <LineMaster />,
+    "ORDERS REPORT": <OrdersReport />,
+
 
 
   };

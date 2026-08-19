@@ -75,3 +75,5 @@ export const SALES_DELIVERY_API = "salesDelivery";
 export const ITEM_API = "item";
 export const MATERIAL_ISSUE = "materialIssue";
 export const MATERIAL_RETURN = "materialReturn";
+export const ORDER_MASTER_API = "orderMaster";
+export const LINE_MASTER_API = "lineMaster";

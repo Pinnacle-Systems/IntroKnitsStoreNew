@@ -316,6 +316,9 @@ export const getCommonParams = () => ({
   finYearId: secureLocalStorage.getItem(
     sessionStorage.getItem("sessionId") + "currentFinYear",
   ),
+  userRole: secureLocalStorage.getItem(
+    sessionStorage.getItem("sessionId") + "userRole",
+  ),
   token: `Bearer ${secureLocalStorage.getItem(sessionStorage.getItem("sessionId") + "token")} `,
 });
 

@@ -160,7 +160,7 @@ const Header = ({ profile, setProfile, setIsGlobalOpen }) => {
           onClick={() => { setIsGlobalOpen(true) }}>
           {GLOBE_ICON}
         </div>
-        <Notification />
+        {/* <Notification /> */}
         <p>WELCOME</p> &nbsp;{" "}
         <div className="text-black">{userName?.toUpperCase()}</div>
         <div className="relative text-left" ref={ref}>

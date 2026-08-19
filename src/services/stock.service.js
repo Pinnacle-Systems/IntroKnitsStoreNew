@@ -517,13 +517,15 @@ async function remove(id) {
 
 async function getStock(req, res) {
   try {
-    const branchId = req.query.branchId
-      ? parseInt(req.query.branchId)
-      : undefined;
+
+    const { branchId, userRole, isShowStockPriceWise } = req.query;
+
+    const isPriceWise = isShowStockPriceWise === "true" || isShowStockPriceWise === true || isShowStockPriceWise === "1";
+
 
     const stocks = await prisma.stock.findMany({
       where: {
-        ...(branchId ? { branchId } : {}),
+        ...(branchId ? { branchId: parseInt(branchId) } : {}),
       },
       include: {
         Item: true,
@@ -544,7 +546,8 @@ async function getStock(req, res) {
     const grouped = {};
 
     for (const s of stocks) {
-      const key = [
+      const price = s.price ? parseFloat(s.price) || 0 : 0;
+      const keyParts = [
         s.storeId ?? "null",
         s.itemGroupId ?? "null",
         s.itemId ?? "null",
@@ -552,8 +555,13 @@ async function getStock(req, res) {
         s.colorId ?? "null",
         s.uomId ?? "null",
         s.gsmId ?? "null",
+      ];
 
-      ].join("-");
+      if (isPriceWise) {
+        keyParts.push(price);
+      }
+
+      const key = keyParts.join("-");
 
       if (!grouped[key]) {
         grouped[key] = {
@@ -567,9 +575,13 @@ async function getStock(req, res) {
           gsm: s.Gsm?.name ?? "—",
           branch: s.Branch?.name ?? "—",
           netQty: 0,
+          ...(isPriceWise ? { price, totalValue: 0 } : {}),
         };
       }
       grouped[key].netQty += s.qty ?? 0;
+      if (isPriceWise) {
+        grouped[key].totalValue = grouped[key].netQty * grouped[key].price;
+      }
     }
 
     const data = Object.values(grouped);
@@ -581,6 +593,7 @@ async function getStock(req, res) {
       zeroQty: data.filter((r) => r.netQty === 0).length,
       positiveQty: data.filter((r) => r.netQty > 0).length,
       totalNetQty: data.reduce((s, r) => s + r.netQty, 0),
+      ...(isPriceWise ? { totalValue: data.reduce((s, r) => s + (r.totalValue || 0), 0) } : {}),
     };
 
     return { data: data?.filter((r) => r.netQty > 0), summary };
@@ -673,6 +686,138 @@ async function getStockforMaterialIssue(req, res) {
   }
 }
 
+async function getOrdersReport(req, res) {
+  try {
+    const { branchId, orderNo, orderId, searchOrderNo, departmentId, employeeId, fromDate, toDate } = req.query;
+
+    const targetOrderNo = orderNo || searchOrderNo;
+    const parsedOrderId = orderId ? parseInt(orderId) : (targetOrderNo && !isNaN(targetOrderNo) ? parseInt(targetOrderNo) : undefined);
+    const parsedDeptId = departmentId ? parseInt(departmentId) : undefined;
+    const parsedEmpId = employeeId ? parseInt(employeeId) : undefined;
+
+    const whereClause = {
+      ...(branchId ? { branchId: parseInt(branchId) } : {}),
+      ...(parsedDeptId ? { departmentId: parsedDeptId } : {}),
+      ...(parsedEmpId ? { employeeId: parsedEmpId } : {}),
+    };
+
+    if (parsedOrderId) {
+      whereClause.OR = [
+        { orderId: parsedOrderId },
+        { Order: { docId: { contains: String(targetOrderNo) } } },
+        { docId: { contains: String(targetOrderNo) } },
+      ];
+    } else if (targetOrderNo) {
+      whereClause.OR = [
+        { Order: { docId: { contains: String(targetOrderNo) } } },
+        { docId: { contains: String(targetOrderNo) } },
+      ];
+    }
+
+    if (fromDate || toDate) {
+      whereClause.createdAt = {};
+      if (fromDate) {
+        whereClause.createdAt.gte = new Date(fromDate);
+      }
+      if (toDate) {
+        const toDateEnd = new Date(toDate);
+        toDateEnd.setHours(23, 59, 59, 999);
+        whereClause.createdAt.lte = toDateEnd;
+      }
+    }
+
+    const materialIssues = await prisma.materialIssue.findMany({
+      where: whereClause,
+      include: {
+        Order: true,
+        Branch: true,
+        Location: true,
+        Department: true,
+        Employee: true,
+        MaterialIssueItems: {
+          include: {
+            Itemgroup: true,
+            Item: true,
+            Size: true,
+            Color: true,
+            Uom: true,
+            MaterialReturnItems: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const grouped = {};
+
+    for (const issue of materialIssues) {
+      const orderNumber = issue.Order?.docId || issue.docId || "N/A";
+      const orderIdVal = issue.orderId || issue.id;
+      const deptName = issue.Department?.name || "—";
+      const empName = issue.Employee?.name || "—";
+
+      for (const item of issue.MaterialIssueItems || []) {
+        const issuedQty = parseFloat(item.issueQty) || 0;
+        const price = parseFloat(item.price) || 0;
+
+        const returnedQty = (item.MaterialReturnItems || []).reduce(
+          (sum, ret) => sum + (parseFloat(ret.returnQty) || 0),
+          0
+        );
+
+        const usedQty = Math.max(0, issuedQty - returnedQty);
+        const usedValue = usedQty * price;
+
+        const key = `${orderIdVal}-${issue.departmentId || 0}-${issue.employeeId || 0}-${item.itemGroupId || 0}-${item.itemId || 0}-${item.sizeId || 0}-${item.colorId || 0}-${item.uomId || 0}-${price}`;
+
+        if (!grouped[key]) {
+          grouped[key] = {
+            id: key,
+            orderId: orderIdVal,
+            orderNo: orderNumber,
+            department: deptName,
+            employee: empName,
+            docDate: issue.docDate ? new Date(issue.docDate).toISOString().split("T")[0] : (issue.createdAt ? new Date(issue.createdAt).toISOString().split("T")[0] : "—"),
+            store: issue.Location?.storeName || "—",
+            branch: issue.Branch?.branchName || "—",
+            itemGroup: item.Itemgroup?.name || "—",
+            item: item.Item?.name || "—",
+            size: item.Size?.name || "—",
+            color: item.Color?.name || "—",
+            uom: item.Uom?.name || "—",
+            issuedQty: 0,
+            returnedQty: 0,
+            usedQty: 0,
+            price: price,
+            usedValue: 0,
+          };
+        }
+
+        grouped[key].issuedQty += issuedQty;
+        grouped[key].returnedQty += returnedQty;
+        grouped[key].usedQty += usedQty;
+        grouped[key].usedValue += usedValue;
+      }
+    }
+
+    const data = Object.values(grouped);
+
+    const summary = {
+      totalRecords: data.length,
+      totalOrders: new Set(data.map((d) => d.orderNo)).size,
+      totalIssuedQty: data.reduce((acc, curr) => acc + curr.issuedQty, 0),
+      totalReturnedQty: data.reduce((acc, curr) => acc + curr.returnedQty, 0),
+      overallUsedQty: data.reduce((acc, curr) => acc + curr.usedQty, 0),
+      overallUsedValue: data.reduce((acc, curr) => acc + curr.usedValue, 0),
+    };
+
+    return { statusCode: 0, data, summary };
+  } catch (err) {
+    console.error("Orders report error:", err);
+    return { statusCode: 1, error: "Failed to generate orders report", data: [], summary: {} };
+  }
+}
+
 export {
   get,
   getOne,
@@ -682,5 +827,6 @@ export {
   remove,
   getStock,
   getBoardQty,
-  getStockforMaterialIssue
+  getStockforMaterialIssue,
+  getOrdersReport,
 };

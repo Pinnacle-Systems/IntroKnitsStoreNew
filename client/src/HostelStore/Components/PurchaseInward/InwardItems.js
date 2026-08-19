@@ -388,11 +388,9 @@ const InwardItems = ({
                     Gross
                   </th>
                 )}
-                {receiptType === "Against Invoice" && (
-                  <th className={`w-10 px-1 py-2 text-center font-medium `}>
-                    Tax
-                  </th>
-                )}
+                <th className={`w-20 px-1 py-2 text-center font-medium `}>
+                  Total Amount
+                </th>
                 <th className={`w-12 px-1 py-2 text-center font-medium `}>
                   Actions
                 </th>
@@ -707,7 +705,9 @@ const InwardItems = ({
                           />
                         </td>
                       )}
-
+                    <td className=" border border-gray-300 text-[11px] text-right px-2">
+                      {row?.price && row?.inwardQty && ((Number(row?.price) || 0) * (Number(row?.inwardQty) || 0))}
+                    </td>
 
                     <td className="w-2 border border-gray-300">
                       <input
@@ -765,31 +765,25 @@ const InwardItems = ({
                     )
                     .toFixed(2)}
                 </td>
-                {(inwardType === "Direct Inward" ||
-                  receiptType === "Against Invoice") && (
-                    <td className="text-right border border-gray-300 px-1 font-medium ">
-                      {inwardItems
-                        ?.reduce((sum, row) => sum + (Number(row.price) || 0), 0)
-                        .toFixed(2)}
-                    </td>
-                  )}
-                {receiptType === "Against Invoice" && (
-                  <td className="text-right border border-gray-300 px-1 font-medium ">
-                    {inwardItems
-                      ?.reduce((sum, row) => {
-                        const qty = parseFloat(row.inwardQty) || 0;
-                        const price = parseFloat(row.price) || 0;
-                        return sum + qty * price;
-                      }, 0)
-                      .toFixed(2)}
-                  </td>
-                )}
-                {receiptType === "Against Invoice" && (
-                  <td
-                    className="text-right border border-gray-300"
-                    colSpan={1}
-                  ></td>
-                )}
+
+                <td
+                  className="text-right border border-gray-300"
+                  colSpan={1}
+                >
+
+                </td>
+                <td
+                  className="text-right border border-gray-300"
+                  colSpan={1}
+                >
+                  {inwardItems
+                    ?.reduce(
+                      (sum, row) => sum + (Number(row.price) * Number(row.inwardQty) || 0),
+                      0,
+                    )
+                    .toFixed(2)}
+                </td>
+
 
                 <td className="border border-gray-300"></td>
               </tr>

@@ -133,6 +133,8 @@ model Branch {
   salesDeliveries       SalesDelivery[]
   MaterialIssue         MaterialIssue[]
   MaterialReturn        MaterialReturn[]
+  LineMaster            LineMaster[]
+  Order                 Order[]
 }
 
 model UserOnBranch {
@@ -290,8 +292,11 @@ model Employee {
   employeeId         String?
 
   User            User[]
-  JobCardFollowUp JobCard[] @relation("followup")
-  JobCardDesigner JobCard[] @relation("design")
+  JobCardFollowUp JobCard[]        @relation("followup")
+  JobCardDesigner JobCard[]        @relation("design")
+  Stock           Stock[]
+  MaterialIssue   MaterialIssue[]
+  MaterialReturn  MaterialReturn[]
 }
 
 model FinYear {
@@ -367,6 +372,9 @@ model Department {
   productionempPunch productionempPunch[]
   machines           Machine[]
   processes          Process[]
+  Stock              Stock[]
+  MaterialIssue      MaterialIssue[]
+  MaterialReturn     MaterialReturn[]
 }
 
 enum PageType {
@@ -824,6 +832,13 @@ model Stock {
   MaterialIssueItems    MaterialIssueItems?  @relation(fields: [materialIssueItemsId], references: [id], onDelete: Cascade)
   materialReturnItemsId Int?
   MaterialReturnItems   MaterialReturnItems? @relation(fields: [materialReturnItemsId], references: [id], onDelete: Cascade)
+  price                 String?
+  orderId               Int?
+  departmentId          Int?
+  employeeId            Int?
+  Order                 Order?               @relation(fields: [orderId], references: [id])
+  Department            Department?          @relation(fields: [departmentId], references: [id])
+  Employee              Employee?            @relation(fields: [employeeId], references: [id])
 }
 
 model SalesBill {
@@ -2753,6 +2768,12 @@ model MaterialIssue {
   Location            Location?             @relation(fields: [locationId], references: [id])
   locationId          Int?
   productionType      String?
+  orderId             Int?
+  departmentId        Int?
+  employeeId          Int?
+  Order               Order?                @relation(fields: [orderId], references: [id])
+  Department          Department?           @relation(fields: [departmentId], references: [id])
+  Employee            Employee?             @relation(fields: [employeeId], references: [id])
   MaterialIssueItems  MaterialIssueItems[]
   MaterialReturn      MaterialReturn[]
   MaterialReturnItems MaterialReturnItems[]
@@ -2775,6 +2796,7 @@ model MaterialIssueItems {
   Hsn                 Hsn?                  @relation(fields: [hsnId], references: [id])
   hsnId               Int?
   issueQty            String?
+  price               String?
   InwardItems         InwardItems?          @relation(fields: [inwardItemsId], references: [id])
   inwardItemsId       Int?
   Stock               Stock[]
@@ -2800,6 +2822,12 @@ model MaterialReturn {
   productionType      String?
   MaterialIssue       MaterialIssue?        @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
   materialIssueId     Int?
+  orderId             Int?
+  departmentId        Int?
+  employeeId          Int?
+  Order               Order?                @relation(fields: [orderId], references: [id])
+  Department          Department?           @relation(fields: [departmentId], references: [id])
+  Employee            Employee?             @relation(fields: [employeeId], references: [id])
   MaterialReturnItems MaterialReturnItems[]
 }
 
@@ -2820,9 +2848,31 @@ model MaterialReturnItems {
   Hsn                  Hsn?                @relation(fields: [hsnId], references: [id])
   hsnId                Int?
   returnQty            String?
+  price               String?
   MaterialIssue        MaterialIssue?      @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
   materialIssueId      Int?
   MaterialIssueItems   MaterialIssueItems? @relation(fields: [materialIssueItemsId], references: [id], onDelete: Cascade)
   materialIssueItemsId Int?
   Stock                Stock[]
+}
+
+model Order {
+  id             Int              @id @default(autoincrement())
+  docId          String?
+  description    String?
+  active         Boolean?         @default(false)
+  branchId       Int?
+  Branch         Branch?          @relation(fields: [branchId], references: [id])
+  Stock          Stock[]
+  MaterialIssue  MaterialIssue[]
+  MaterialReturn MaterialReturn[]
+}
+
+model LineMaster {
+  id          Int      @id @default(autoincrement())
+  name        String?
+  description String?
+  active      Boolean? @default(false)
+  branchId    Int?
+  Branch      Branch?  @relation(fields: [branchId], references: [id])
 }

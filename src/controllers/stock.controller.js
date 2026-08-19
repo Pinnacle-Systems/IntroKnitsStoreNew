@@ -10,7 +10,8 @@ import {
   getPcsStock as _getPcsStock,
   getStock as _getStock,
   getBoardQty as _getBoardQty,
-  getStockforMaterialIssue as _getStockforMaterialIssue
+  getStockforMaterialIssue as _getStockforMaterialIssue,
+  getOrdersReport as _getOrdersReport
 } from "../services/stock.service.js";
 
 async function get(req, res, next) {
@@ -134,6 +135,16 @@ async function getStockforMaterialIssue(req, res, next) {
   }
 }
 
+async function getOrdersReport(req, res, next) {
+  try {
+    res.json(await _getOrdersReport(req, res));
+    console.log(res.statusCode);
+  } catch (err) {
+    console.error(`Error`, err.message);
+  }
+}
+
+
 
 export {
   get,
@@ -144,5 +155,6 @@ export {
   remove,
   getStock,
   getBoardQty,
-  getStockforMaterialIssue
+  getStockforMaterialIssue,
+  getOrdersReport
 };

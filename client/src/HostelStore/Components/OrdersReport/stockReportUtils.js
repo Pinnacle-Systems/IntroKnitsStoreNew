@@ -16,8 +16,26 @@ export const STOCK_COLUMNS = [
   { key: "totalValue", label: "Value", w: "80px" },
 ];
 
-export const QTY_KEYS = ["netQty"];
-export const VALUE_KEYS = ["netQty", "totalValue"];
+export const ORDERS_REPORT_COLUMNS = [
+  { key: "orderNo", label: "Order No", w: "120px" },
+  { key: "department", label: "Department", w: "130px" },
+  { key: "employee", label: "Incharge / Employee", w: "140px" },
+  { key: "docDate", label: "Date", w: "90px" },
+  { key: "store", label: "Location", w: "110px" },
+  { key: "itemGroup", label: "Item Group", w: "110px" },
+  { key: "item", label: "Item Name", w: "150px" },
+  { key: "size", label: "Size", w: "70px" },
+  { key: "color", label: "Color", w: "90px" },
+  { key: "uom", label: "UOM", w: "50px" },
+  { key: "issuedQty", label: "Issued Qty", w: "90px" },
+  { key: "returnedQty", label: "Returned Qty", w: "90px" },
+  { key: "usedQty", label: "Used Qty", w: "90px" },
+  { key: "price", label: "Rate (₹)", w: "80px" },
+  { key: "usedValue", label: "Used Value (₹)", w: "110px" },
+];
+
+export const QTY_KEYS = ["netQty", "issuedQty", "returnedQty", "usedQty"];
+export const VALUE_KEYS = ["netQty", "totalValue", "usedValue"];
 
 // ── fmt2: fixed 2 decimal ─────────────────────────────────────────────────────
 export function fmt2(val) {
@@ -37,7 +55,25 @@ export function fmt3(val) {
   });
 }
 
-// ── buildGroups: same logic as PO report ─────────────────────────────────────
+export function calcGroupTotals(rows) {
+  let issuedQty = 0, returnedQty = 0, usedQty = 0, usedValue = 0;
+  function rec(arr) {
+    for (const r of arr) {
+      if (r._group) {
+        rec(r._children);
+      } else {
+        issuedQty += parseFloat(r.issuedQty) || 0;
+        returnedQty += parseFloat(r.returnedQty) || 0;
+        usedQty += parseFloat(r.usedQty) || 0;
+        usedValue += parseFloat(r.usedValue) || 0;
+      }
+    }
+  }
+  rec(rows);
+  return { issuedQty, returnedQty, usedQty, usedValue };
+}
+
+// ── buildGroups ───────────────────────────────────────────────────────────────
 export function buildGroups(rows, groupKeys, groupDirs, depth = 0) {
   if (depth >= groupKeys.length) return rows;
   const key = groupKeys[depth];
@@ -52,12 +88,18 @@ export function buildGroups(rows, groupKeys, groupDirs, depth = 0) {
 
   return Object.entries(buckets)
     .sort(([a], [b]) => a.localeCompare(b) * dir)
-    .map(([val, children]) => ({
-      _group: true,
-      _key: key,
-      _val: val,
-      _depth: depth,
-      _count: children.length,
-      _children: buildGroups(children, groupKeys, groupDirs, depth + 1),
-    }));
+    .map(([val, children]) => {
+      const groupedChildren = buildGroups(children, groupKeys, groupDirs, depth + 1);
+      const totals = calcGroupTotals(groupedChildren);
+      return {
+        _group: true,
+        _key: key,
+        _val: val,
+        _depth: depth,
+        _count: children.length,
+        _children: groupedChildren,
+        ...totals,
+      };
+    });
 }
+

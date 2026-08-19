@@ -48,3 +48,5 @@ export { default as bankMasterApi } from "./BankMasterService";
 export { default as MachineMasterApi } from "./MachineMasterService";
 export { default as ItemSubGroupMasterApi } from "./ItemSubGroupService";
 export { default as ItemMasterApi } from "./ItemMasterService";
+export { default as OrderMasterApi } from "./OrderMasterService";
+export { default as LineMasterApi } from "./LineMasterService";

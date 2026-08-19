@@ -11,6 +11,7 @@ import {
   getStock,
   getBoardQty,
   getStockforMaterialIssue,
+  getOrdersReport,
 } from "../controllers/stock.controller.js";
 
 router.post("/", create);
@@ -22,6 +23,8 @@ router.get("/", get);
 router.get("/getBoardQty", getBoardQty);
 
 router.get("/getStockforMaterialIssue", getStockforMaterialIssue);
+
+router.get("/getOrdersReport", getOrdersReport);
 
 
 router.get("/getStockReport", getStock);

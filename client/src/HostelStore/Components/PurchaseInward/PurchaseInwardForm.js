@@ -1130,18 +1130,7 @@ const PurchaseInwardForm = ({
                 Qty Summary
               </h2>
 
-              {inwardType !== "Direct Inward" && (
-                <div className="space-y-1.5">
-                  <div className="flex justify-between  text-sm">
-                    <span className="text-slate-600">Total Order Qty</span>
-                    <span className="font-medium">
-                      {inwardItems
-                        .reduce((sum, row) => sum + (Number(row.poQty) || 0), 0)
-                        .toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              )}
+
               <div className="space-y-1.5">
                 <div className="flex justify-between  text-sm">
                   <span className="text-slate-600">Total Inward Qty</span>
@@ -1149,6 +1138,17 @@ const PurchaseInwardForm = ({
                     {inwardItems
                       .reduce(
                         (sum, row) => sum + (Number(row.inwardQty) || 0),
+                        0,
+                      )
+                      .toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between  text-sm">
+                  <span className="text-slate-600">Total Amount</span>
+                  <span className="font-medium">
+                    {inwardItems
+                      .reduce(
+                        (sum, row) => sum + (Number(row.inwardQty) || 0) * (Number(row.price) || 0),
                         0,
                       )
                       .toFixed(2)}

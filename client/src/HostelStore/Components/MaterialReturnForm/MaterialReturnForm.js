@@ -15,7 +15,6 @@ import moment from "moment";
 import {
   findFromList,
   getCommonParams,
-  isGridDatasValid,
   ModeChip,
   renameFile,
 } from "../../../Utils/helper.js";
@@ -50,6 +49,10 @@ import TransactionEntryShell from "../ReusableComponents/TransactionEntryShell.j
 import TransactionHeaderSection from "../ReusableComponents/TransactionHeaderSection.jsx";
 import CommonFormFooter from "../ReusableComponents/CommonFormFooter.jsx";
 import { useAddMaterialReturnMutation, useGetMaterialReturnByIdQuery, useUpdateMaterialReturnMutation } from "../../../redux/uniformService/MaterialReturn.js";
+import { useGetOrderMasterQuery } from "../../../redux/services/OrderMasterService.js";
+import { useGetDepartmentQuery } from "../../../redux/services/DepartmentMasterService.js";
+import { useGetEmployeeQuery } from "../../../redux/services/EmployeeMasterService.js";
+import SearchableTableCellSelect from "../ReusableComponents/SearchableTableCellSelect.jsx";
 
 const MaterialReturnForm = ({
   onClose,
@@ -115,6 +118,9 @@ const MaterialReturnForm = ({
   const [searchSize, setSearchSize] = useState("");
   const [searchColor, setSearchColor] = useState("");
   const [searchUom, setSearchUom] = useState("");
+  const [orderId, setOrderId] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
 
   const [isHeaderOpen, setIsHeaderOpen] = useState(true);
   const [issueId, setIssueId] = useState(null)
@@ -156,10 +162,9 @@ const MaterialReturnForm = ({
   console.log(tempItems, "tempItems")
   console.log(issueData, "issueData")
 
-  const searchFields = {
-    searchDocId,
-    searchDocDate,
-  };
+  const { data: orderData } = useGetOrderMasterQuery({});
+  const { data: departmentData } = useGetDepartmentQuery({});
+  const { data: employeeData } = useGetEmployeeQuery({});
 
   const isSupplierOutside = useMemo(() => {
     return supplierData?.data?.City?.state?.name !== "TAMILNADU";
@@ -223,6 +228,9 @@ const MaterialReturnForm = ({
       setDiscountValue(data?.discountValue || "");
       setNetBillValue(parseFloat(data?.netBillValue)?.toFixed(2) || "");
       setAttachments(data?.attachments ? data?.attachments : []);
+      setOrderId(data?.orderId || "");
+      setDepartmentId(data?.departmentId || "");
+      setEmployeeId(data?.employeeId || "");
     },
     [id, fromPoSupplierId, fromPoType],
   );
@@ -257,7 +265,10 @@ const MaterialReturnForm = ({
     netBillValue,
     attachments: attachments?.filter((i) => i.filePath),
     productionType,
-    issueId
+    issueId,
+    orderId,
+    departmentId,
+    employeeId,
   };
 
   const handleSubmitCustom = async (callback, data, text, nextProcess) => {
@@ -369,6 +380,39 @@ const MaterialReturnForm = ({
     return duplicates; // empty array = no duplicates
   };
 
+  function isGridDatasValid(datas, isRequiredAllData, mandatoryFields = []) {
+    console.log(datas, "datas");
+    console.log(isRequiredAllData, "isRequiredAllData");
+    console.log(mandatoryFields, "mandatoryFields")
+
+    // If the array is empty, we consider it invalid because there must be at least one row.
+    if (!datas || datas.length === 0) {
+      return false;
+    }
+
+    const isInvalidValue = (value) => {
+      if (value === "" || value === null || value === undefined || value === "NaN") return true;
+      if (typeof value === "number" && isNaN(value)) return true;
+
+      if (String(value).trim() !== "" && !isNaN(Number(value)) && Number(value) === 0) {
+        return true;
+      }
+
+      return false;
+    };
+
+    if (isRequiredAllData) {
+      return datas.every(obj => Object.values(obj).every(value => !isInvalidValue(value)));
+    } else {
+      return datas.every(obj =>
+        mandatoryFields.every(field => {
+          const value = obj[field];
+          return value !== undefined && !isInvalidValue(value);
+        })
+      );
+    }
+  }
+
   const validateData = (data) => {
     const items = data?.inwardItems || [];
     const filledItems = items.filter((item) => item.styleItemId);
@@ -380,7 +424,9 @@ const MaterialReturnForm = ({
       { condition: !data.productionType, title: "Production Type is required!" },
       { condition: !data.issueId, title: "Issue No required!" },
       { condition: !data.supplierId, title: "Supplier is required!" },
-
+      { condition: !data.orderId, title: "Order No is required!" },
+      { condition: !data.departmentId, title: "Department is required!" },
+      { condition: !data.employeeId, title: "Incharge Name is required!" },
 
       {
         condition: !isGridDatasValid(data?.inwardItems, false, [
@@ -573,6 +619,36 @@ const MaterialReturnForm = ({
     }
   }
 
+  const orderOptions = (id ? orderData?.data : orderData?.data?.filter(i => i.active) || [])?.map((item) => ({
+    value: item.id,
+    label: item?.docId || "",
+  }));
+  const departmentOptions = (id ? departmentData?.data : departmentData?.data?.filter(i => i.active) || [])?.map((item) => ({
+    value: item.id,
+    label: item?.name || "",
+  }));
+
+  const employeeOptions = (id ? employeeData?.data : employeeData?.data?.filter(i => i.active) || [])?.map((item) => ({
+    value: item.id,
+    label: item?.name || "",
+  }));
+
+  const issueOptions = (id ? issueData?.data :
+    issueData?.data?.filter(i =>
+      i?.supplierId == supplierId
+      && i?.orderId == orderId
+      && i?.departmentId == departmentId
+      && i?.employeeId == employeeId
+    ) || [])?.map((item) => ({
+      value: item.id,
+      label: item?.docId || "",
+    }));
+  useEffect(() => {
+    if (id || productionType != "InHouse") return
+    const data = supplierList?.data?.filter((i) => (i.name).includes("INTRO KNITS"))?.[0]?.id
+    console.log(data, "data123", suppliers())
+    setSupplierId(data)
+  }, [supplierList, productionType])
 
   return (
     <>
@@ -593,251 +669,7 @@ const MaterialReturnForm = ({
           setSummary={setSummary}
         />
       </Modal>
-      {attachmentModal && (
-        <Modal
-          isOpen={attachmentModal}
-          onClose={() => {
-            setAttachmentModal(false);
-            setSelectedAttachmentIndex(null);
-          }}
-          widthClass="p-4 w-[600px] h-[420px]"
-        >
-          <div className="space-y-3">
-            <h2 className="text-base font-semibold text-slate-700">
-              Attachments
-            </h2>
 
-            {/* Drag & Drop Zone */}
-            <div
-              className="border-2 border-dashed border-indigo-300 rounded-lg p-4 text-center cursor-pointer hover:bg-indigo-50 transition"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const file = e.dataTransfer.files[0];
-                if (file && selectedAttachmentIndex !== null) {
-                  handleInputChange(
-                    renameFile(file),
-                    selectedAttachmentIndex,
-                    "filePath",
-                  );
-                }
-              }}
-              onClick={() =>
-                document.getElementById("modal-file-upload")?.click()
-              }
-            >
-              <p className="text-sm text-slate-500">
-                Drag & drop here, or{" "}
-                <span className="text-indigo-600 font-medium underline">
-                  click to browse
-                </span>
-              </p>
-              {selectedAttachmentIndex !== null ? (
-                <p className="text-xs text-indigo-500 mt-1">
-                  Uploading to row:{" "}
-                  <strong>{selectedAttachmentIndex + 1}</strong>
-                </p>
-              ) : (
-                <p className="text-xs text-slate-400 mt-1">
-                  Select a row below first
-                </p>
-              )}
-            </div>
-
-            {/* Hidden file input for drag & drop zone */}
-            <input
-              type="file"
-              id="modal-file-upload"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files[0] && selectedAttachmentIndex !== null) {
-                  handleInputChange(
-                    renameFile(e.target.files[0]),
-                    selectedAttachmentIndex,
-                    "filePath",
-                  );
-                  e.target.value = "";
-                }
-              }}
-              disabled={readOnly}
-            />
-
-            {/* Attachments Table */}
-            <div className="max-h-[200px] overflow-auto">
-              <div className="border-collapse bg-[#F1F1F0] shadow-sm overflow-auto">
-                <table className="bg-gray-200 text-gray-800 text-sm table-auto w-full">
-                  <thead className="py-2 font-medium sticky top-0">
-                    <tr>
-                      <th className="py-2 text-xs w-10 text-center border-r border-white/50">
-                        S.No
-                      </th>
-                      <th className="py-2 text-xs w-60 text-center border-r border-white/50">
-                        Name
-                      </th>
-                      <th className="py-2 text-xs w-60 text-center border-r border-white/50">
-                        File
-                      </th>
-                      <th className="py-2 text-xs w-10 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attachments?.map((item, index) => (
-                      <tr
-                        key={index}
-                        onClick={() => setSelectedAttachmentIndex(index)}
-                        className={`transition-colors border-b border-gray-200 text-[12px] cursor-pointer ${index === selectedAttachmentIndex
-                          ? "bg-indigo-100 border-l-2 border-l-indigo-500"
-                          : index % 2 === 0
-                            ? "bg-white hover:bg-gray-50"
-                            : "bg-gray-100 hover:bg-gray-50"
-                          }`}
-                      >
-                        {/* S.No */}
-                        <td className="border-r border-white/50 h-8 text-center">
-                          {index + 1}
-                        </td>
-
-                        {/* Name */}
-                        <td className="border-r border-white/50 h-8">
-                          <input
-                            type="text"
-                            className="text-left rounded py-1 px-2 w-full focus:outline-none focus:ring focus:border-blue-300 bg-transparent"
-                            value={item?.name}
-                            onChange={(e) =>
-                              handleInputChange(e.target.value, index, "name")
-                            }
-                            onClick={(e) => e.stopPropagation()}
-                            disabled={readOnly}
-                          />
-                        </td>
-
-                        {/* File */}
-                        <td className="border-r border-white/50 h-8 px-2">
-                          <div className="flex items-center gap-2">
-                            {!readOnly && (
-                              <label
-                                htmlFor={`modal-row-upload-${index}`}
-                                className="cursor-pointer flex items-center justify-center p-1 bg-gray-100 rounded hover:bg-gray-200"
-                                title="Attach file"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                📎
-                                <input
-                                  type="file"
-                                  id={`modal-row-upload-${index}`}
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    if (e.target.files[0]) {
-                                      handleInputChange(
-                                        renameFile(e.target.files[0]),
-                                        index,
-                                        "filePath",
-                                      );
-                                      e.target.value = "";
-                                    }
-                                  }}
-                                  disabled={readOnly}
-                                />
-                              </label>
-                            )}
-
-                            {item.filePath ? (
-                              <>
-                                <span className="truncate max-w-[120px] text-green-700 font-medium">
-                                  ✅ {item.filePath?.name ?? item.filePath}
-                                </span>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openPreview(item.filePath);
-                                  }}
-                                  className="text-blue-600 text-xs hover:underline"
-                                >
-                                  View
-                                </button>
-                                {!readOnly && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleInputChange("", index, "filePath");
-                                    }}
-                                    className="text-red-600 text-xs"
-                                    title="Remove file"
-                                    disabled={readOnly}
-                                  >
-                                    ✕
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-gray-400 italic text-xs">
-                                No file
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="w-[30px] border-gray-200 h-8">
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addNewComments();
-                              }}
-                              disabled={readOnly}
-                              className="flex items-center px-1 bg-blue-50 rounded"
-                            >
-                              <Plus size={18} className="text-blue-800" />
-                            </button>
-                            <button
-                              className="flex items-center px-1 bg-red-50 rounded"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteRow(index);
-                                if (selectedAttachmentIndex === index) {
-                                  setSelectedAttachmentIndex(null);
-                                }
-                              }}
-                              disabled={readOnly}
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 text-red-800"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex justify-end pt-1">
-              <button
-                onClick={() => {
-                  setAttachmentModal(false);
-                  setSelectedAttachmentIndex(null);
-                }}
-                className="px-2 py-1 text-sm rounded bg-green-700 text-white hover:bg-green-800 border border-green-800"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
 
 
 
@@ -933,32 +765,10 @@ const MaterialReturnForm = ({
               </div>
 
 
-              {/* <div className="col-span-2">
-                <TextInput
-                  name={"Contact No"}
-                  value={findFromList(supplierId, supplierList?.data, "contactNumber")}
-                  readOnly={true}
-                />
-              </div>
-              <div className="col-span-4">
 
-                <TextAreaNew
-                  name={"Address"}
-                  rows={1}
-                  value={findFromList(supplierId, supplierList?.data, "address")}
-                  readOnly={true}
-                />
-              </div> */}
-              <div className="col-span-2">
+              {/* <div className="col-span-2">
                 <DropdownWithModal
                   name="Issue No"
-                  // options={dropDownListObject(
-
-                  //   issueData?.data,
-
-                  //   "docId",
-                  //   "id",
-                  // )}
                   options={dropDownListObject(
                     id
                       ? issueData?.data
@@ -966,6 +776,60 @@ const MaterialReturnForm = ({
                     "docId",
                     "id",
                   )}
+                  value={issueId}
+                  setValue={setIssueId}
+                  required={true}
+                  readOnly={readOnly}
+                  className={`w-[150px]`}
+                  addNewModalWidth="w-[40%] h-[48%]"
+                  disabled={id}
+                />
+              </div> */}
+
+              <div className="col-span-2  ">
+                <SearchableTableCellSelect
+                  name="Order No"
+                  options={orderOptions}
+                  value={orderId}
+                  setValue={setOrderId}
+                  required={true}
+                  readOnly={readOnly}
+                  className={`w-[150px]`}
+                  addNewModalWidth="w-[40%] h-[48%]"
+                  disabled={id}
+                />
+              </div>
+              <div className="col-span-2  ">
+                <SearchableTableCellSelect
+                  name="Department"
+                  options={departmentOptions}
+                  value={departmentId}
+                  setValue={setDepartmentId}
+                  required={true}
+                  readOnly={readOnly}
+                  className={`w-[150px]`}
+                  addNewModalWidth="w-[40%] h-[48%]"
+                  disabled={id}
+                />
+              </div>
+              <div className="col-span-2  ">
+                <SearchableTableCellSelect
+                  name="Incharge Name"
+                  options={employeeOptions}
+                  value={employeeId}
+                  setValue={setEmployeeId}
+                  required={true}
+                  readOnly={readOnly}
+                  className={`w-[150px]`}
+                  addNewModalWidth="w-[40%] h-[48%]"
+                  disabled={id}
+                />
+              </div>
+
+              <div className="col-span-2  ">
+                <SearchableTableCellSelect
+                  name="Issue No"
+                  options={issueOptions}
                   value={issueId}
                   setValue={setIssueId}
                   required={true}

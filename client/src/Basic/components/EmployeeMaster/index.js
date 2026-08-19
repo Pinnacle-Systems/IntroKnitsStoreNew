@@ -605,22 +605,20 @@ export default function Form() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setView("table")}
-              className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${
-                view === "table"
-                  ? "bg-indigo-100 text-indigo-600"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
+              className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${view === "table"
+                ? "bg-indigo-100 text-indigo-600"
+                : "text-gray-600 hover:bg-gray-100"
+                }`}
             >
               <Table size={16} />
               Table
             </button>
             <button
               onClick={() => setView("card")}
-              className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${
-                view === "card"
-                  ? "bg-indigo-100 text-indigo-600"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
+              className={`px-3 py-1 rounded-md text-xs flex items-center gap-1 ${view === "card"
+                ? "bg-indigo-100 text-indigo-600"
+                : "text-gray-600 hover:bg-gray-100"
+                }`}
             >
               <LayoutGrid size={16} />
               Cards
@@ -648,24 +646,21 @@ export default function Form() {
                 <div
                   key={index}
                   onClick={() => onDataClick(employee.id)}
-                  className={`border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer ${
-                    employee?.active ? "border-green-200" : "border-red-200"
-                  }`}
+                  className={`border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer ${employee?.active ? "border-green-200" : "border-red-200"
+                    }`}
                 >
                   <div
-                    className={`p-4 ${
-                      employee?.active ? "bg-green-50" : "bg-red-50"
-                    }`}
+                    className={`p-4 ${employee?.active ? "bg-green-50" : "bg-red-50"
+                      }`}
                   >
                     <div className="flex items-center">
                       <img
                         src={employee?.imageBase64 || imageDefault}
                         alt="Profile"
-                        className={`w-12 h-12 object-cover rounded-full border-2 ${
-                          employee?.active
-                            ? "border-green-500"
-                            : "border-red-500"
-                        }`}
+                        className={`w-12 h-12 object-cover rounded-full border-2 ${employee?.active
+                          ? "border-green-500"
+                          : "border-red-500"
+                          }`}
                       />
                       <div className="ml-3">
                         <h3 className="font-medium text-gray-900">
@@ -688,9 +683,8 @@ export default function Form() {
                       <div>
                         <p className="text-gray-500">Status</p>
                         <p
-                          className={`font-medium ${
-                            employee?.active ? "text-green-600" : "text-red-600"
-                          }`}
+                          className={`font-medium ${employee?.active ? "text-green-600" : "text-red-600"
+                            }`}
                         >
                           {employee?.active ? "Active" : "Inactive"}
                         </p>
@@ -907,8 +901,8 @@ export default function Form() {
                             id
                               ? employeeCategoryList?.data
                               : employeeCategoryList?.data?.filter(
-                                  (item) => item?.active,
-                                ),
+                                (item) => item?.active,
+                              ),
                             "name",
                             "id",
                           )}
@@ -940,8 +934,8 @@ export default function Form() {
                             id
                               ? departmentList?.data
                               : departmentList?.data?.filter(
-                                  (item) => item?.active,
-                                ),
+                                (item) => item?.active,
+                              ),
                             "name",
                             "id",
                           )}
@@ -971,8 +965,8 @@ export default function Form() {
                           value={chamberNo}
                           setValue={setChamberNo}
                           readOnly={readOnly}
-                          // required={isCurrentEmployeeDoctor(employeeCategory)}
-                          // disabled={childRecord.current > 0}
+                        // required={isCurrentEmployeeDoctor(employeeCategory)}
+                        // disabled={childRecord.current > 0}
                         />
                       </div>
 
@@ -1029,7 +1023,7 @@ export default function Form() {
                           value={fatherName}
                           setValue={setFatherName}
                           readOnly={readOnly}
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
                         {errors.fatherName && (
                           <span className="text-red-500 text-xs ml-1">
@@ -1066,7 +1060,7 @@ export default function Form() {
                           setValue={setPanNo}
                           type="pan_no"
                           readOnly={readOnly}
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
                         {errors.panNo && (
                           <span className="text-red-500 text-xs ml-1">
@@ -1118,7 +1112,7 @@ export default function Form() {
                           value={bankName}
                           setValue={setBankName}
                           readOnly={readOnly}
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
                       </div>
                       <div className="col-span-1">
@@ -1127,7 +1121,7 @@ export default function Form() {
                           value={branchName}
                           setValue={setbranchName}
                           readOnly={readOnly}
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
                       </div>
 
@@ -1137,7 +1131,7 @@ export default function Form() {
                           value={ifscNo}
                           setValue={setIfscNo}
                           readOnly={readOnly}
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
 
                         <TextInputNew
@@ -1146,7 +1140,7 @@ export default function Form() {
                           value={accountNo}
                           setValue={setAccountNo}
                           readOnly={readOnly}
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
                       </div>
                     </div>
@@ -1185,7 +1179,7 @@ export default function Form() {
                           value={email}
                           setValue={setEmail}
                           readOnly={readOnly}
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
                       </div>
                       <div>
@@ -1201,7 +1195,7 @@ export default function Form() {
                           readOnly={readOnly}
                           className={errorClass("localAddress")}
 
-                          // disabled={childRecord.current > 0}
+                        // disabled={childRecord.current > 0}
                         />
                         {errors.localAddress && (
                           <span className="text-red-500 text-xs ml-1 mt-1">

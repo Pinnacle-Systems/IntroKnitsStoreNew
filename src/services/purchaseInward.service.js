@@ -488,6 +488,7 @@ async function createInwardItems(
         discountValue: stockDetail?.discountValue ? parseInt(stockDetail.discountValue) : null,
         taxPercent: stockDetail?.taxPercent ? parseInt(stockDetail.taxPercent) : null,
         gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
+        price: stockDetail?.price ? parseFloat(stockDetail.price) : null,
       },
     });
     await tx.stock.create({
@@ -508,6 +509,8 @@ async function createInwardItems(
         sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
         colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
         gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
+        price: stockDetail?.price ? (stockDetail.price) : null,
+
       },
     });
     return createdItem;
@@ -918,6 +921,8 @@ async function updateinwardItems(
             ? parseInt(stockDetail.taxPercent)
             : null,
           gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
+          price: stockDetail?.price ? parseFloat(stockDetail.price) : null,
+
         },
       });
 
@@ -949,6 +954,8 @@ async function updateinwardItems(
               ? parseInt(stockDetail.colorId)
               : null,
             gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
+            price: stockDetail?.price ? (stockDetail.price) : null,
+
           },
         });
       } else {
@@ -978,6 +985,8 @@ async function updateinwardItems(
               ? parseInt(stockDetail.colorId)
               : null,
             gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
+            price: stockDetail?.price ? (stockDetail.price) : null,
+
           },
         });
       }
@@ -1013,6 +1022,8 @@ async function updateinwardItems(
             ? parseInt(stockDetail.taxPercent)
             : null,
           gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
+          price: stockDetail?.price ? parseFloat(stockDetail.price) : null,
+
         },
       });
       await tx.stock.create({
@@ -1037,6 +1048,8 @@ async function updateinwardItems(
           sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
           colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
           gsmId: stockDetail?.gsmId ? parseInt(stockDetail.gsmId) : null,
+          price: stockDetail?.price ? parseFloat(stockDetail.price) : null,
+
         },
       });
       return createdItem;

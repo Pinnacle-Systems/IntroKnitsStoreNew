@@ -76,3 +76,5 @@ export { default as itemSubGroup } from "./itemSubGroup.route.js";
 export { default as item } from "./Item.route.js";
 export { default as materialIssue } from "./materialIssue.route.js";
 export { default as materialReturn } from "./materialReturn.route.js";
+export { default as line } from "./line.route.js";
+export { default as orderMaster } from "./orderMaster.route.js";
