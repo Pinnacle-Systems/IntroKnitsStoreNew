@@ -19,7 +19,7 @@ import {
   renameFile,
 } from "../../../Utils/helper.js";
 import { toast } from "react-toastify";
-import { FiEdit2, FiSave } from "react-icons/fi";
+import { FiEdit2, FiSave, FiPrinter } from "react-icons/fi";
 import { HiOutlineRefresh } from "react-icons/hi";
 import Swal from "sweetalert2";
 import { dropDownListObject } from "../../../Utils/contructObject.js";
@@ -53,6 +53,8 @@ import { useGetLineMasterQuery } from "../../../redux/services/LineMasterService
 import SearchableTableCellSelect from "../ReusableComponents/SearchableTableCellSelect.jsx";
 import { useGetEmployeeQuery } from "../../../redux/services/EmployeeMasterService.js";
 import { useGetDepartmentQuery } from "../../../redux/services/DepartmentMasterService.js";
+import { PDFViewer } from "@react-pdf/renderer";
+import ThermalSalesPrintFormat from "./ThermalSalesPrintFormat.jsx";
 
 const MaterialIssueFrom = ({
   onClose,
@@ -123,6 +125,7 @@ const MaterialIssueFrom = ({
   const [employeeId, setEmployeeId] = useState("");
   const [childRecord, setChildRecord] = useState(false);
   const [isHeaderOpen, setIsHeaderOpen] = useState(true);
+  const [thermalPrint, setThermalPrint] = useState(false);
 
   const supplierRef = useRef(null);
   const [dispatchInvalidate] = useInvalidateTags();
@@ -621,6 +624,17 @@ const MaterialIssueFrom = ({
       rightActions={
         <>
           <button
+            className="bg-slate-600 text-white px-4 py-1 rounded-md hover:bg-slate-700 flex items-center text-sm"
+            onClick={() => {
+
+              setThermalPrint(true);
+            }}
+          // disabled={childRecord}
+          >
+            <FiPrinter className="w-4 h-4 mr-2" />
+            Thermal Print
+          </button>
+          <button
             className="bg-yellow-600 text-white px-4 py-1 rounded-md hover:bg-yellow-700 flex items-center text-sm"
             onClick={() => {
 
@@ -646,7 +660,7 @@ const MaterialIssueFrom = ({
     label: item?.name || "",
   }));
 
-  const employeeOptions = (id ? employeeData?.data : employeeData?.data?.filter(i => i.active) || [])?.map((item) => ({
+  const employeeOptions = (id ? employeeData?.data : employeeData?.data?.filter(i => i.active && i.departmentId == departmentId) || [])?.map((item) => ({
     value: item.id,
     label: item?.name || "",
   }));
@@ -677,7 +691,27 @@ const MaterialIssueFrom = ({
           setSummary={setSummary}
         />
       </Modal>
-
+      <Modal isOpen={thermalPrint} onClose={() => setThermalPrint(false)} widthClass="w-[300pt] h-[95%]">
+        <PDFViewer style={{ width: "100%", height: "90vh" }}>
+          <ThermalSalesPrintFormat
+            title="MATERIAL ISSUE"
+            docId={docId}
+            // date={date}
+            branchData={findFromList(branchId, branchList?.data, "all")}
+            items={inwardItems?.filter(i => i.itemId)}
+            remarks={remarks}
+            itemList={itemGroupList?.data}
+            sizeList={sizeList?.data}
+            colorList={colorList?.data}
+            uomList={uomList?.data}
+            supplierName={findFromList(supplierId, suppliers(), "name") || supplierData?.data?.name}
+            orderNo={findFromList(orderId, orderData?.data, "name")}
+            department={findFromList(departmentId, departmentData?.data, "name")}
+            inchargeName={findFromList(employeeId, employeeData?.data, "name")}
+            processType={productionType === "InHouse" ? "IN-HOUSE" : "OUT-SOURCE"}
+          />
+        </PDFViewer>
+      </Modal>
 
 
 

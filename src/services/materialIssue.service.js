@@ -373,10 +373,6 @@ async function create(body) {
   const shortCode = finYearDate ? getYearShortCodeForFinYear(finYearDate?.startDateStartTime, finYearDate?.endDateEndTime,) : "";
   let newDocId = await getNextDocId(branchId, shortCode, finYearDate?.startDateStartTime, finYearDate?.endDateEndTime, draftSave,);
 
-  const safeNetBillValue = netBillValue && !isNaN(Number(netBillValue)) ? parseFloat(netBillValue) : null;
-  const { module, hasApproval } = await getModuleApprovalSetup(REFERENCE_PAGE, branchId,);
-
-
   let data;
   await prisma.$transaction(async (tx) => {
     data = await tx.materialIssue.create({
@@ -409,6 +405,47 @@ async function create(body) {
   return { statusCode: 0, data };
 }
 
+async function calculateFIFOAvailableStock(tx, stockDetail, storeId, branchId) {
+  const stockHistory = await tx.stock.findMany({
+    where: {
+      itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
+      itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
+      sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
+      colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
+      uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
+      storeId: parseInt(storeId),
+      branchId: branchId ? parseInt(branchId) : undefined,
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  const inBatches = [];
+  let totalOutQty = 0;
+
+  for (const stock of stockHistory) {
+    const qty = Number(stock.qty || 0);
+    if (stock.inOrOut === "In") {
+      inBatches.push({ ...stock, availableQty: qty });
+    } else if (stock.inOrOut === "Out") {
+      totalOutQty += Math.abs(qty);
+    }
+  }
+
+  for (const batch of inBatches) {
+    if (totalOutQty <= 0) break;
+
+    if (totalOutQty >= batch.availableQty) {
+      totalOutQty -= batch.availableQty;
+      batch.availableQty = 0;
+    } else {
+      batch.availableQty -= totalOutQty;
+      totalOutQty = 0;
+    }
+  }
+
+  return inBatches.filter(b => b.availableQty > 0);
+}
+
 // ── CREATE INWARD ITEMS ───────────────────────────────────────────────────────
 async function createIssueItems(
   tx,
@@ -421,9 +458,18 @@ async function createIssueItems(
   departmentId,
   employeeId,
 ) {
-  const promises = inwardItems?.map(async (stockDetail) => {
-    const createdItem = await tx.MaterialIssueItems.create({
+  for (const stockDetail of inwardItems) {
+    let issueQty = stockDetail?.issueQty ? Number(stockDetail.issueQty) : 0;
+    if (issueQty <= 0) continue;
 
+    const availableBatches = await calculateFIFOAvailableStock(tx, stockDetail, storeId, branchId);
+
+    console.log(availableBatches, "availableBatches in create")
+
+    // Determine the price for MaterialIssueItems (First batch's price)
+    const firstBatchPrice = availableBatches.length > 0 && availableBatches[0].price ? availableBatches[0].price : (stockDetail?.price ? stockDetail.price : null);
+
+    const createdItem = await tx.MaterialIssueItems.create({
       data: {
         materialIssueId: parseInt(materialIssue.id),
         itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
@@ -432,36 +478,69 @@ async function createIssueItems(
         colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
         uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
         hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
-        issueQty: stockDetail?.issueQty ? (stockDetail.issueQty) : null,
+        issueQty: String(issueQty), // Single total quantity
         inwardItemsId: stockDetail?.inwardItemsId ? parseInt(stockDetail.inwardItemsId) : null,
-        price: stockDetail?.price ? (stockDetail.price) : null,
+        price: firstBatchPrice,
       },
     });
-    await tx.stock.create({
-      data: {
-        inOrOut: "Out",
-        processName: "MaterialIssue",
-        createdById: parseInt(userId),
-        storeId: parseInt(storeId),
-        materialIssueItemsId: createdItem.id,
-        itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
-        itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
-        sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
-        colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
-        uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-        qty: stockDetail?.issueQty ? parseInt(0 - stockDetail.issueQty) : null,
-        inwardType: "MaterialIssue" || "",
-        branchId: branchId ? parseInt(branchId) : null,
-        orderId: orderId ? parseInt(orderId) : null,
-        departmentId: departmentId ? parseInt(departmentId) : null,
-        employeeId: employeeId ? parseInt(employeeId) : null,
-        price: stockDetail?.price ? (stockDetail.price) : null,
 
-      },
-    });
-    return createdItem;
-  });
-  return Promise.all(promises);
+    let remainingQty = issueQty;
+
+    for (const batch of availableBatches) {
+      if (remainingQty <= 0) break;
+
+      const takeQty = Math.min(remainingQty, batch.availableQty);
+
+      await tx.stock.create({
+        data: {
+          inOrOut: "Out",
+          processName: "MaterialIssue",
+          createdById: parseInt(userId),
+          storeId: parseInt(storeId),
+          materialIssueItemsId: createdItem.id,
+          itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
+          itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
+          sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
+          colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
+          uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
+          qty: 0 - takeQty,
+          inwardType: "MaterialIssue",
+          branchId: branchId ? parseInt(branchId) : null,
+          orderId: orderId ? parseInt(orderId) : null,
+          departmentId: departmentId ? parseInt(departmentId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+          price: batch.price ? batch.price : firstBatchPrice,
+        },
+      });
+
+      remainingQty -= takeQty;
+    }
+
+    // If there is still issueQty remaining
+    if (remainingQty > 0) {
+      await tx.stock.create({
+        data: {
+          inOrOut: "Out",
+          processName: "MaterialIssue",
+          createdById: parseInt(userId),
+          storeId: parseInt(storeId),
+          materialIssueItemsId: createdItem.id,
+          itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
+          itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
+          sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
+          colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
+          uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
+          qty: 0 - remainingQty,
+          inwardType: "MaterialIssue",
+          branchId: branchId ? parseInt(branchId) : null,
+          orderId: orderId ? parseInt(orderId) : null,
+          departmentId: departmentId ? parseInt(departmentId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+          price: firstBatchPrice,
+        },
+      });
+    }
+  }
 }
 
 function findRemovedItemsGoods(dataFound, inwardItems) {
@@ -518,6 +597,9 @@ async function update(id, body, files) {
   let data;
   await prisma.$transaction(async (tx) => {
     if (removeItemsGoodsIds.length > 0) {
+      await tx.stock.deleteMany({
+        where: { materialIssueItemsId: { in: removeItemsGoodsIds } },
+      });
       await tx.MaterialIssueItems.deleteMany({
         where: { id: { in: removeItemsGoodsIds } },
       });
@@ -559,81 +641,42 @@ async function updateinwardItems(
   orderId,
   departmentId,
   employeeId,
-
 ) {
-  const promises = inwardItems?.map(async (stockDetail) => {
+  for (const stockDetail of inwardItems) {
+    let issueQty = stockDetail?.issueQty ? Number(stockDetail.issueQty) : 0;
+    if (issueQty <= 0) continue;
+
     if (stockDetail.id) {
-      const updatedItem = await tx.MaterialIssueItems.update({
+      // Revert stock out entries for this item BEFORE calculating FIFO so the available pool is accurate
+      await tx.stock.deleteMany({
+        where: { materialIssueItemsId: parseInt(stockDetail.id) }
+      });
+    }
+
+    const availableBatches = await calculateFIFOAvailableStock(tx, stockDetail, storeId, branchId);
+
+    console.log(availableBatches, "availableBatches in update")
+
+    const firstBatchPrice = availableBatches.length > 0 && availableBatches[0].price ? availableBatches[0].price : (stockDetail?.price ? stockDetail.price : null);
+
+    let createdOrUpdatedItem;
+    if (stockDetail.id) {
+      createdOrUpdatedItem = await tx.MaterialIssueItems.update({
         where: { id: parseInt(stockDetail.id) },
         data: {
-          materialIssueId: parseInt(materialIssue.id),
           itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
           itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
           sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
           colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
-          issueQty: stockDetail?.issueQty ? (stockDetail.issueQty) : null,
+          issueQty: String(issueQty), // Single total quantity
           inwardItemsId: stockDetail?.inwardItemsId ? parseInt(stockDetail.inwardItemsId) : null,
-          price: stockDetail?.price ? (stockDetail.price) : null,
-
+          price: firstBatchPrice,
         },
       });
-
-      const existingStock = await tx.stock.findFirst({
-        where: { materialIssueItemsId: updatedItem.id },
-      });
-      if (existingStock) {
-        await tx.stock.update({
-          where: { id: existingStock.id },
-          data: {
-            inOrOut: "Out",
-            processName: "MaterialIssue",
-            createdById: parseInt(userId),
-            storeId: parseInt(storeId),
-            materialIssueItemsId: updatedItem.id,
-            itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
-            itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
-            sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
-            colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
-            uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-            qty: stockDetail?.issueQty ? parseInt(0 - stockDetail.issueQty) : null,
-            inwardType: "MaterialIssue" || "",
-            branchId: branchId ? parseInt(branchId) : null,
-            orderId: orderId ? parseInt(orderId) : null,
-            departmentId: departmentId ? parseInt(departmentId) : null,
-            employeeId: employeeId ? parseInt(employeeId) : null,
-            price: stockDetail?.price ? (stockDetail.price) : null,
-
-          },
-        });
-      } else {
-        await tx.stock.create({
-          data: {
-            inOrOut: "Out",
-            processName: "MaterialIssue",
-            createdById: parseInt(userId),
-            storeId: parseInt(storeId),
-            materialIssueItemsId: updatedItem.id,
-            itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
-            itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
-            sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
-            colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
-            uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-            qty: stockDetail?.issueQty ? parseInt(0 - stockDetail.issueQty) : null,
-            inwardType: "MaterialIssue" || "",
-            branchId: branchId ? parseInt(branchId) : null,
-            orderId: orderId ? parseInt(orderId) : null,
-            departmentId: departmentId ? parseInt(departmentId) : null,
-            employeeId: employeeId ? parseInt(employeeId) : null,
-            price: stockDetail?.price ? (stockDetail.price) : null,
-
-          },
-        });
-      }
-      return updatedItem;
     } else {
-      const createdItem = await tx.inwardItems.create({
+      createdOrUpdatedItem = await tx.MaterialIssueItems.create({
         data: {
           materialIssueId: parseInt(materialIssue.id),
           itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
@@ -642,41 +685,70 @@ async function updateinwardItems(
           colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
-          issueQty: stockDetail?.issueQty ? (stockDetail.issueQty) : null,
+          issueQty: issueQty,
           inwardItemsId: stockDetail?.inwardItemsId ? parseInt(stockDetail.inwardItemsId) : null,
-          price: stockDetail?.price ? (stockDetail.price) : null,
-
+          price: firstBatchPrice,
         },
       });
+    }
+
+    let remainingQty = issueQty;
+
+    for (const batch of availableBatches) {
+      if (remainingQty <= 0) break;
+
+      const takeQty = Math.min(remainingQty, batch.availableQty);
+
       await tx.stock.create({
         data: {
           inOrOut: "Out",
           processName: "MaterialIssue",
           createdById: parseInt(userId),
           storeId: parseInt(storeId),
-          materialIssueItemsId: updatedItem.id,
+          materialIssueItemsId: createdOrUpdatedItem.id,
           itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
           itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
           sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
           colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-          qty: stockDetail?.issueQty ? parseInt(0 - stockDetail.issueQty) : null,
-          inwardType: "MaterialIssue" || "",
+          qty: 0 - takeQty,
+          inwardType: "MaterialIssue",
           branchId: branchId ? parseInt(branchId) : null,
           orderId: orderId ? parseInt(orderId) : null,
           departmentId: departmentId ? parseInt(departmentId) : null,
           employeeId: employeeId ? parseInt(employeeId) : null,
+          price: batch.price ? batch.price : firstBatchPrice,
+        },
+      });
+
+      remainingQty -= takeQty;
+    }
+
+    // If there is still remainingQty remaining
+    if (remainingQty > 0) {
+      await tx.stock.create({
+        data: {
+          inOrOut: "Out",
+          processName: "MaterialIssue",
+          createdById: parseInt(userId),
+          storeId: parseInt(storeId),
+          materialIssueItemsId: createdOrUpdatedItem.id,
+          itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
+          itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
+          sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
+          colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
+          uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
+          qty: 0 - remainingQty,
+          inwardType: "MaterialIssue",
+          branchId: branchId ? parseInt(branchId) : null,
           orderId: orderId ? parseInt(orderId) : null,
           departmentId: departmentId ? parseInt(departmentId) : null,
           employeeId: employeeId ? parseInt(employeeId) : null,
-          price: stockDetail?.price ? (stockDetail.price) : null,
-
+          price: firstBatchPrice,
         },
       });
-      return createdItem;
     }
-  });
-  return Promise.all(promises);
+  }
 }
 
 // ── REMOVE ────────────────────────────────────────────────────────────────────

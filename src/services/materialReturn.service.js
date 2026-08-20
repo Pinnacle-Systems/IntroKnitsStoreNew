@@ -376,6 +376,54 @@ async function create(body) {
 
 
 
+async function calculateLIFOIssuedStock(tx, materialIssueItemsId) {
+  if (!materialIssueItemsId) return [];
+
+  const outStocks = await tx.stock.findMany({
+    where: { 
+      materialIssueItemsId: parseInt(materialIssueItemsId),
+      inOrOut: "Out" 
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  const existingReturns = await tx.MaterialReturnItems.findMany({
+    where: { materialIssueItemsId: parseInt(materialIssueItemsId) },
+    select: { id: true }
+  });
+  
+  let totalReturnedQty = 0;
+  if (existingReturns.length > 0) {
+    const returnIds = existingReturns.map(r => r.id);
+    const inStocks = await tx.stock.findMany({
+      where: {
+        materialReturnItemsId: { in: returnIds },
+        inOrOut: "In"
+      }
+    });
+    totalReturnedQty = inStocks.reduce((sum, s) => sum + (s.qty || 0), 0);
+  }
+
+  const outBatches = [];
+  
+  for (const stock of outStocks) {
+    let outQty = Math.abs(stock.qty || 0);
+    
+    if (totalReturnedQty >= outQty) {
+      totalReturnedQty -= outQty;
+      outBatches.push({ ...stock, availableToReturn: 0 });
+    } else if (totalReturnedQty > 0) {
+      outQty -= totalReturnedQty;
+      totalReturnedQty = 0;
+      outBatches.push({ ...stock, availableToReturn: outQty });
+    } else {
+      outBatches.push({ ...stock, availableToReturn: outQty });
+    }
+  }
+
+  return outBatches.filter(b => b.availableToReturn > 0);
+}
+
 // ── CREATE INWARD ITEMS ───────────────────────────────────────────────────────
 async function createReturnItems(
   tx,
@@ -389,9 +437,16 @@ async function createReturnItems(
   departmentId,
   employeeId,
 ) {
-  const promises = inwardItems?.map(async (stockDetail) => {
-    const createdItem = await tx.MaterialReturnItems.create({
+  for (const stockDetail of inwardItems) {
+    let returnQty = stockDetail?.returnQty ? Number(stockDetail.returnQty) : 0;
+    if (returnQty <= 0) continue;
 
+    const issueItemsId = stockDetail?.materialIssueItemsId || stockDetail?.id;
+    const reversibleBatches = issueItemsId ? await calculateLIFOIssuedStock(tx, issueItemsId) : [];
+    
+    const firstBatchPrice = reversibleBatches.length > 0 && reversibleBatches[0].price ? reversibleBatches[0].price : (stockDetail?.price ? stockDetail.price : null);
+
+    const createdItem = await tx.MaterialReturnItems.create({
       data: {
         materialReturnId: parseInt(materialReturn.id),
         itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
@@ -400,38 +455,68 @@ async function createReturnItems(
         colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
         uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
         hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
-        returnQty: stockDetail?.returnQty ? String(stockDetail.returnQty) : null,
+        returnQty: String(returnQty),
         materialIssueId: issueId ? parseInt(issueId) : null,
-        materialIssueItemsId: stockDetail?.id ? parseInt(stockDetail.id) : null,
-        price: stockDetail?.price ? (stockDetail.price) : null,
-
+        materialIssueItemsId: issueItemsId ? parseInt(issueItemsId) : null,
+        price: firstBatchPrice,
       },
     });
-    await tx.stock.create({
-      data: {
-        inOrOut: "In",
-        processName: "MaterialIssue",
-        createdById: parseInt(userId),
-        storeId: parseInt(storeId),
-        materialReturnItemsId: createdItem.id,
-        itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
-        itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
-        sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
-        colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
-        uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-        qty: stockDetail?.returnQty ? parseInt(stockDetail.returnQty) : null,
-        inwardType: "MaterialIssue" || "",
-        branchId: branchId ? parseInt(branchId) : null,
-        orderId: orderId ? parseInt(orderId) : null,
-        departmentId: departmentId ? parseInt(departmentId) : null,
-        employeeId: employeeId ? parseInt(employeeId) : null,
-        price: stockDetail?.price ? (stockDetail.price) : null,
 
-      },
-    });
-    return createdItem;
-  });
-  return Promise.all(promises);
+    let remainingQty = returnQty;
+
+    for (const batch of reversibleBatches) {
+      if (remainingQty <= 0) break;
+      const takeQty = Math.min(remainingQty, batch.availableToReturn);
+
+      await tx.stock.create({
+        data: {
+          inOrOut: "In",
+          processName: "MaterialReturn",
+          createdById: parseInt(userId),
+          storeId: parseInt(storeId),
+          materialReturnItemsId: createdItem.id,
+          itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
+          itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
+          sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
+          colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
+          uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
+          qty: takeQty,
+          inwardType: "MaterialReturn",
+          branchId: branchId ? parseInt(branchId) : null,
+          orderId: orderId ? parseInt(orderId) : null,
+          departmentId: departmentId ? parseInt(departmentId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+          price: batch.price ? batch.price : firstBatchPrice,
+        },
+      });
+
+      remainingQty -= takeQty;
+    }
+
+    if (remainingQty > 0) {
+      await tx.stock.create({
+        data: {
+          inOrOut: "In",
+          processName: "MaterialReturn",
+          createdById: parseInt(userId),
+          storeId: parseInt(storeId),
+          materialReturnItemsId: createdItem.id,
+          itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
+          itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
+          sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
+          colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
+          uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
+          qty: remainingQty,
+          inwardType: "MaterialReturn",
+          branchId: branchId ? parseInt(branchId) : null,
+          orderId: orderId ? parseInt(orderId) : null,
+          departmentId: departmentId ? parseInt(departmentId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+          price: firstBatchPrice,
+        },
+      });
+    }
+  }
 }
 
 function findRemovedItemsGoods(dataFound, inwardItems) {
@@ -459,12 +544,6 @@ async function update(id, body, files) {
     employeeId,
   } = await body;
 
-
-
-
-
-
-
   const dataFound = await prisma.MaterialReturn.findUnique({
     where: { id: parseInt(id) },
     include: {
@@ -472,7 +551,6 @@ async function update(id, body, files) {
     },
   });
   if (!dataFound) return NoRecordFound("MaterialIssue ");
-
 
   const inwardItems =
     typeof rawInwardItems === "string"
@@ -486,6 +564,9 @@ async function update(id, body, files) {
   let data;
   await prisma.$transaction(async (tx) => {
     if (removeItemsGoodsIds.length > 0) {
+      await tx.stock.deleteMany({
+        where: { materialReturnItemsId: { in: removeItemsGoodsIds } }
+      });
       await tx.MaterialReturnItems.deleteMany({
         where: { id: { in: removeItemsGoodsIds } },
       });
@@ -503,16 +584,11 @@ async function update(id, body, files) {
         orderId: orderId ? parseInt(orderId) : null,
         departmentId: departmentId ? parseInt(departmentId) : null,
         employeeId: employeeId ? parseInt(employeeId) : null,
-
       },
     });
 
     await updateinwardItems(tx, inwardItems, data, userId, storeId, issueId, branchId, orderId, departmentId, employeeId);
-
-
   });
-
-
 
   return { statusCode: 0, data };
 }
@@ -530,79 +606,42 @@ async function updateinwardItems(
   departmentId,
   employeeId,
 ) {
-  const promises = inwardItems?.map(async (stockDetail) => {
+  for (const stockDetail of inwardItems) {
+    let returnQty = stockDetail?.returnQty ? Number(stockDetail.returnQty) : 0;
+    if (returnQty <= 0) continue;
+
     if (stockDetail.id) {
-      const updatedItem = await tx.MaterialReturnItems.update({
+      // Revert previous stock entries so LIFO calculation sees the full capacity
+      await tx.stock.deleteMany({
+        where: { materialReturnItemsId: parseInt(stockDetail.id) }
+      });
+    }
+
+    // Identify the original Material Issue Item ID
+    const issueItemsId = stockDetail?.materialIssueItemsId || (stockDetail.id ? null : stockDetail.id);
+    const reversibleBatches = issueItemsId ? await calculateLIFOIssuedStock(tx, issueItemsId) : [];
+
+    const firstBatchPrice = reversibleBatches.length > 0 && reversibleBatches[0].price ? reversibleBatches[0].price : (stockDetail?.price ? stockDetail.price : null);
+
+    let createdOrUpdatedItem;
+    if (stockDetail.id && stockDetail.materialIssueItemsId) {
+      createdOrUpdatedItem = await tx.MaterialReturnItems.update({
         where: { id: parseInt(stockDetail.id) },
         data: {
-          materialReturnId: parseInt(materialReturn.id),
           itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
           itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
           sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
           colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
-          returnQty: stockDetail?.returnQty ? String(stockDetail.returnQty) : null,
+          returnQty: String(returnQty),
           materialIssueId: issueId ? parseInt(issueId) : null,
-          price: stockDetail?.price ? (stockDetail.price) : null,
-
+          materialIssueItemsId: parseInt(issueItemsId),
+          price: firstBatchPrice,
         },
       });
-
-      const existingStock = await tx.stock.findFirst({
-        where: { materialReturnItemsId: updatedItem.id },
-      });
-      if (existingStock) {
-        await tx.stock.update({
-          where: { id: existingStock.id },
-          data: {
-            inOrOut: "In",
-            processName: "MaterialReturn",
-            createdById: parseInt(userId),
-            storeId: parseInt(storeId),
-            materialReturnItemsId: updatedItem.id,
-            itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
-            itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
-            sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
-            colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
-            uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-            qty: stockDetail?.returnQty ? parseInt(stockDetail.returnQty) : null,
-            inwardType: "MaterialReturn" || "",
-            branchId: branchId ? parseInt(branchId) : null,
-            orderId: orderId ? parseInt(orderId) : null,
-            departmentId: departmentId ? parseInt(departmentId) : null,
-            employeeId: employeeId ? parseInt(employeeId) : null,
-            price: stockDetail?.price ? (stockDetail.price) : null,
-
-          },
-        });
-      } else {
-        await tx.stock.create({
-          data: {
-            inOrOut: "In",
-            processName: "MaterialReturn",
-            createdById: parseInt(userId),
-            storeId: parseInt(storeId),
-            materialReturnItemsId: updatedItem.id,
-            itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
-            itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
-            sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
-            colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
-            uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-            qty: stockDetail?.issueQty ? parseInt(stockDetail.issueQty) : null,
-            inwardType: "MaterialReturn" || "",
-            branchId: branchId ? parseInt(branchId) : null,
-            orderId: orderId ? parseInt(orderId) : null,
-            departmentId: departmentId ? parseInt(departmentId) : null,
-            employeeId: employeeId ? parseInt(employeeId) : null,
-            price: stockDetail?.price ? (stockDetail.price) : null,
-
-          },
-        });
-      }
-      return updatedItem;
     } else {
-      const createdItem = await tx.MaterialReturnItems.create({
+      createdOrUpdatedItem = await tx.MaterialReturnItems.create({
         data: {
           materialReturnId: parseInt(materialReturn.id),
           itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
@@ -611,39 +650,69 @@ async function updateinwardItems(
           colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
           hsnId: stockDetail?.hsnId ? parseInt(stockDetail.hsnId) : null,
-          returnQty: stockDetail?.returnQty ? String(stockDetail.returnQty) : null,
+          returnQty: String(returnQty),
           materialIssueId: issueId ? parseInt(issueId) : null,
-          materialIssueItemsId: stockDetail?.id ? parseInt(stockDetail.id) : null,
-          price: stockDetail?.price ? (stockDetail.price) : null,
-
+          materialIssueItemsId: issueItemsId ? parseInt(issueItemsId) : null,
+          price: firstBatchPrice,
         },
       });
+    }
+
+    let remainingQty = returnQty;
+
+    for (const batch of reversibleBatches) {
+      if (remainingQty <= 0) break;
+      const takeQty = Math.min(remainingQty, batch.availableToReturn);
+
       await tx.stock.create({
         data: {
-          inOrOut: "Out",
+          inOrOut: "In",
           processName: "MaterialReturn",
           createdById: parseInt(userId),
           storeId: parseInt(storeId),
-          materialReturnItemsId: createdItem.id,
+          materialReturnItemsId: createdOrUpdatedItem.id,
           itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
           itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
           sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
           colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
           uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
-          qty: stockDetail?.issueQty ? parseInt(0 - stockDetail.issueQty) : null,
-          inwardType: "MaterialReturn" || "",
+          qty: takeQty,
+          inwardType: "MaterialReturn",
           branchId: branchId ? parseInt(branchId) : null,
           orderId: orderId ? parseInt(orderId) : null,
           departmentId: departmentId ? parseInt(departmentId) : null,
           employeeId: employeeId ? parseInt(employeeId) : null,
-          price: stockDetail?.price ? (stockDetail.price) : null,
-
+          price: batch.price ? batch.price : firstBatchPrice,
         },
       });
-      return createdItem;
+
+      remainingQty -= takeQty;
     }
-  });
-  return Promise.all(promises);
+
+    if (remainingQty > 0) {
+      await tx.stock.create({
+        data: {
+          inOrOut: "In",
+          processName: "MaterialReturn",
+          createdById: parseInt(userId),
+          storeId: parseInt(storeId),
+          materialReturnItemsId: createdOrUpdatedItem.id,
+          itemGroupId: stockDetail?.itemGroupId ? parseInt(stockDetail.itemGroupId) : null,
+          itemId: stockDetail?.itemId ? parseInt(stockDetail.itemId) : null,
+          sizeId: stockDetail?.sizeId ? parseInt(stockDetail.sizeId) : null,
+          colorId: stockDetail?.colorId ? parseInt(stockDetail.colorId) : null,
+          uomId: stockDetail?.uomId ? parseInt(stockDetail.uomId) : null,
+          qty: remainingQty,
+          inwardType: "MaterialReturn",
+          branchId: branchId ? parseInt(branchId) : null,
+          orderId: orderId ? parseInt(orderId) : null,
+          departmentId: departmentId ? parseInt(departmentId) : null,
+          employeeId: employeeId ? parseInt(employeeId) : null,
+          price: firstBatchPrice,
+        },
+      });
+    }
+  }
 }
 
 // ── REMOVE ────────────────────────────────────────────────────────────────────

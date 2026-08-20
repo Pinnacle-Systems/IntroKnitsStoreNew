@@ -313,7 +313,7 @@ const PurchaseInwardForm = ({
   };
 
   const findDuplicates = (items) => {
-    const seen = new Map(); // key -> first index
+    const seen = new Map();
     const duplicates = [];
 
     items.forEach((row, index) => {
@@ -323,7 +323,7 @@ const PurchaseInwardForm = ({
 
         row.sizeId || "",
         row.colorId || "",
-        row.gsmId || "",
+        row.price || "",
       ].join("-");
 
       if (seen.has(key)) {
@@ -334,14 +334,14 @@ const PurchaseInwardForm = ({
           itemGroupId: row.itemGroupId,
           sizeId: row.sizeId,
           colorId: row.colorId,
-          gsmId: row.gsmId,
+          price: row.price,
         });
       } else {
         seen.set(key, index);
       }
     });
 
-    return duplicates; // empty array = no duplicates
+    return duplicates;
   };
 
   function isGridDatasValid(datas, isRequiredAllData, mandatoryFields = []) {
@@ -383,6 +383,7 @@ const PurchaseInwardForm = ({
   const validateData = (data) => {
     const items = data?.inwardItems || [];
     const filledItems = items.filter((item) => item.itemId);
+    console.log(filledItems, "filledItems")
     const isAgainstInvoice = data.receiptType === "Against Invoice";
     const isAmountMatched =
       Number(data?.netBillValue).toFixed(2) ===
@@ -404,7 +405,7 @@ const PurchaseInwardForm = ({
         title: "Duplicate Item Found!",
         html: (() => {
           const dup = findDuplicates(filledItems)[0];
-          return `ItemGroup - ${findFromList(dup?.itemGroupId, itemGroupList?.data, "name")},Item - ${findFromList(dup?.itemId, styleItemList?.data, "name")}, Size - ${findFromList(dup?.sizeId, sizeList?.data, "name")}, Color - ${findFromList(dup?.colorId, colorList?.data, "name")}, GSM - ${findFromList(dup?.gsmId, gsmList?.data, "name")}`;
+          return `ItemGroup - ${findFromList(dup?.itemGroupId, itemGroupList?.data, "name")},Item - ${findFromList(dup?.itemId, styleItemList?.data, "name")}, Size - ${findFromList(dup?.sizeId, sizeList?.data, "name")}, Color - ${findFromList(dup?.colorId, colorList?.data, "name")}, Price - ${parseFloat(dup?.price)}`;
         })(),
       },
     ];
