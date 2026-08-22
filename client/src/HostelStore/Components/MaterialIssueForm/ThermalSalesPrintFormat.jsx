@@ -44,6 +44,7 @@ const ThermalSalesPrintFormat = ({
   itemList = [],
   sizeList = [],
   colorList = [],
+  itemGroupList = [],
   supplierName,
   orderNo,
   department,
@@ -60,32 +61,38 @@ const ThermalSalesPrintFormat = ({
   const totalQty = items.reduce((acc, item) => acc + parseFloat(item.issueQty || item.qty || 0), 0);
   const totalAmount = items.reduce((acc, item) => acc + (parseFloat(item.issueQty || item.qty || 0) * parseFloat(item.price || 0)), 0);
 
+  console.log(items, "itemsitems")
+
   return (
     <Document title={`${title}_${docId}`}>
-      <Page size={[216, 'auto']} style={tw('p-1 bg-white flex flex-col')}>
+      <Page size={[200, 1200]} style={tw('p-1 px-1 bg-white flex flex-col')}>
         {/* Header */}
         <View style={tw('flex flex-col items-center mb-1')}>
-          <Text style={tw('font-bold text-xs')}>{branchData?.branchName || "WALRUS"}</Text>
-          <Text style={tw('text-xxs')}>{branchData?.address || ""}</Text>
-          <Text style={tw('text-xxs')}>Ph No.: {branchData?.contactPersonNumber || branchData?.phone || ""}</Text>
+          <Text style={tw('font-bold text-lg')}>{branchData?.branchName || "INTRO KNITS"}</Text>
+          <Text style={tw('text-xs text-center w-full px-2 mt-2')}>{branchData?.address || ""}</Text>
+          <Text style={tw('text-lg font-bold mt-2')}>STORE</Text>
         </View>
 
         <View style={tw('flex flex-col items-center mb-1')}>
-          <Text style={tw('font-bold text-xxs underline')}>{title}</Text>
+          <Text style={tw('font-bold text-lg underline')}>{title}</Text>
         </View>
 
-        <View style={tw('flex flex-row justify-between mb-1')}>
+        <View style={tw('flex flex-col items-end mt-2')}>
+          <Text style={tw('font-bold text-xs ')}>TO :  {supplierName}</Text>
+        </View>
+
+        <View style={tw('flex flex-row justify-between mb-1 mt-2')}>
           <View style={tw('flex flex-col w-1/2')}>
-            <Text style={tw('text-xxs')}>DocId: {docId}</Text>
-            {supplierName && <Text style={tw('text-xxs font-bold mt-1')}>{supplierName}</Text>}
-            {orderNo && <Text style={tw('text-xxs')}>Order: {orderNo}</Text>}
-            {processType && <Text style={tw('text-xxs')}>Process: {processType}</Text>}
+            <Text style={tw('text-xs')}>Issue No: {docId}</Text>
+            <Text style={tw('text-xs')}>Order  No: {orderNo}</Text>
+
+            <Text style={tw('text-xs')}>Date: {date ? moment(date).format('DD/MM/YYYY') : moment().format('DD/MM/YYYY')}</Text>
+            <Text style={tw('text-xs')}>Time: {moment().format('HH:mm A')}</Text>
+
           </View>
           <View style={tw('flex flex-col items-end w-1/2')}>
-            <Text style={tw('text-xxs')}>Date: {date ? moment(date).format('DD/MM/YYYY') : moment().format('DD/MM/YYYY')}</Text>
-            <Text style={tw('text-xxs')}>Time: {moment().format('HH:mm A')}</Text>
-            {department && <Text style={tw('text-xxs mt-1')}>Dept: {department}</Text>}
-            {inchargeName && <Text style={tw('text-xxs')}>Incharge: {inchargeName}</Text>}
+            {department && <Text style={tw('text-xs ')}>Dept: {department}</Text>}
+            {inchargeName && <Text style={tw('text-xs')}>Incharge: {inchargeName}</Text>}
           </View>
         </View>
 
@@ -93,15 +100,19 @@ const ThermalSalesPrintFormat = ({
         <View style={styles.dottedLine} />
         <View style={tw('flex flex-row justify-between py-1')}>
           <Text style={tw('text-xxs font-bold w-[10%]')}>S.No</Text>
-          <Text style={tw('text-xxs font-bold w-[45%]')}>Name</Text>
+          <Text style={tw('text-xxs font-bold w-[45%]')}>Item Group / Item </Text>
+          <Text style={tw('text-xxs font-bold w-[20%] text-right')}>Size / Color </Text>
+          {/* <Text style={tw('text-xxs font-bold w-[10%] text-right')}>Color</Text> */}
+          <Text style={tw('text-xxs font-bold w-[10%] text-right')}>Uom</Text>
           <Text style={tw('text-xxs font-bold w-[15%] text-right')}>Qty</Text>
-          <Text style={tw('text-xxs font-bold w-[15%] text-right')}>Price</Text>
-          <Text style={tw('text-xxs font-bold w-[15%] text-right')}>Amt</Text>
+
         </View>
         <View style={styles.dottedLine} />
 
         {/* Items */}
         {items.map((item, index) => {
+          const itemGroupName = findFromList(item.itemGroupId, itemGroupList, "name");
+
           const itemName = findFromList(item.itemId, itemList, "name");
           const sizeName = findFromList(item.sizeId, sizeList, "name");
           const colorName = findFromList(item.colorId, colorList, "name");
@@ -112,10 +123,21 @@ const ThermalSalesPrintFormat = ({
             <View key={index} style={tw('flex flex-col mb-1')}>
               <View style={tw('flex flex-row justify-between')}>
                 <Text style={tw('text-xxs w-[10%]')}>{index + 1}</Text>
-                <Text style={tw('text-xxs w-[45%]')}>{itemName} {sizeName} {colorName}</Text>
+                <Text style={tw('text-xxs w-[45%]')}>
+                  <View style={tw('flex flex-col ')}>
+                    <Text style={tw('text-xxs font-bold')}>{item?.Itemgroup?.name} /  </Text>
+                    <Text style={tw('text-xxs font-bold')}>{item?.Item?.name} </Text>
+                  </View>
+                </Text>
+                <Text style={tw('text-xxs w-[20%] text-right')}>
+                  <View style={tw('flex flex-col ')}>
+                    <Text style={tw('text-xxs font-bold')}>{item?.Size?.name} /  </Text>
+                    <Text style={tw('text-xxs font-bold')}>{item?.Color?.name} </Text>
+                  </View>
+                </Text>
+                <Text style={tw('text-xxs w-[10%] text-right')}>  {item?.Uom?.name}</Text>
+
                 <Text style={tw('text-xxs w-[15%] text-right')}>{qty.toFixed(2)}</Text>
-                <Text style={tw('text-xxs w-[15%] text-right')}>{parseFloat(item.price || 0).toFixed(2)}</Text>
-                <Text style={tw('text-xxs w-[15%] text-right')}>{amount.toFixed(2)}</Text>
               </View>
             </View>
           );
@@ -124,9 +146,8 @@ const ThermalSalesPrintFormat = ({
         <View style={styles.dottedLine} />
 
         {/* Totals */}
-        <View style={tw('flex flex-row justify-between mb-1')}>
+        <View style={tw('flex flex-row justify-end mb-1')}>
           <Text style={tw('text-xxs font-bold')}>Total Qty: {totalQty.toFixed(2)}</Text>
-          <Text style={tw('text-xxs font-bold')}>Total Amt: Rs. {totalAmount.toFixed(2)}</Text>
         </View>
 
         {remarks && (
@@ -138,7 +159,7 @@ const ThermalSalesPrintFormat = ({
 
         <View style={styles.dottedLine} />
 
-        <View style={tw('flex flex-col items-center mt-2')}>
+        <View style={tw('flex flex-col items-center mt-10')}>
           <Text style={tw('text-xxs text-center')}>Authorized Signatory</Text>
         </View>
       </Page>

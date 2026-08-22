@@ -254,9 +254,9 @@ model Employee {
   joiningDate        DateTime?
   fatherName         String?
   dob                DateTime?
-  gender             Gender?
-  maritalStatus      MaritalStatus?
-  bloodGroup         BloodGroup?
+  gender             String?
+  maritalStatus      String?
+  bloodGroup         String?
   panNo              String?
   consultFee         String?
   salaryPerMonth     String?
@@ -2848,7 +2848,7 @@ model MaterialReturnItems {
   Hsn                  Hsn?                @relation(fields: [hsnId], references: [id])
   hsnId                Int?
   returnQty            String?
-  price               String?
+  price                String?
   MaterialIssue        MaterialIssue?      @relation(fields: [materialIssueId], references: [id], onDelete: Cascade)
   materialIssueId      Int?
   MaterialIssueItems   MaterialIssueItems? @relation(fields: [materialIssueItemsId], references: [id], onDelete: Cascade)

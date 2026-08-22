@@ -672,6 +672,9 @@ const MaterialIssueFrom = ({
     setSupplierId(data)
   }, [supplierList, productionType])
 
+
+  console.log(branchList?.data?.filter((i) => i.id === parseInt(branchId)), "branch", branchId)
+
   return (
     <>
       <Modal
@@ -697,15 +700,16 @@ const MaterialIssueFrom = ({
             title="MATERIAL ISSUE"
             docId={docId}
             // date={date}
-            branchData={findFromList(branchId, branchList?.data, "all")}
+            branchData={branchList?.data?.filter((i) => i.id === parseInt(branchId))?.[0]}
             items={inwardItems?.filter(i => i.itemId)}
             remarks={remarks}
             itemList={itemGroupList?.data}
             sizeList={sizeList?.data}
             colorList={colorList?.data}
             uomList={uomList?.data}
+            itemGroupList={itemGroupList?.data}
             supplierName={findFromList(supplierId, suppliers(), "name") || supplierData?.data?.name}
-            orderNo={findFromList(orderId, orderData?.data, "name")}
+            orderNo={findFromList(orderId, orderData?.data, "docId")}
             department={findFromList(departmentId, departmentData?.data, "name")}
             inchargeName={findFromList(employeeId, employeeData?.data, "name")}
             processType={productionType === "InHouse" ? "IN-HOUSE" : "OUT-SOURCE"}

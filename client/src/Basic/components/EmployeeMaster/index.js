@@ -249,20 +249,21 @@ export default function Form() {
     let newErrors = {};
 
     if (!data.name) newErrors.name = "Full Name is required";
-    if (!data.gender) newErrors.gender = "Gender is required";
-    if (!data.bloodGroup) newErrors.bloodGroup = "Blood Group is required";
-    if (!data.dob) newErrors.dob = "Date of Birth is required";
-    if (!data.employeeCategory)
-      newErrors.employeeCategory = "Employee Category is required";
+    if (!data.employeeCategory) newErrors.employeeCategory = "Employee Category is required";
     if (!data.department) newErrors.department = "Department is required";
-    if (!data.joiningDate) newErrors.joiningDate = "Joining Date is required";
-    if (!data.employeeId) newErrors.employeeId = "Employee Id is required";
     if (!data.mobile) newErrors.mobile = "Mobile No is required";
-    if (!data.localAddress) newErrors.localAddress = "Address is required";
-    if (!data.permCity) newErrors.permCity = "City is required";
-    if (!data.permPincode) newErrors.permPincode = "Pincode is required";
-    if (!data.maritalStatus)
-      newErrors.maritalStatus = "Marital Status is required";
+
+    if (!data.gender) newErrors.gender = "Gender is required";
+    // if (!data.bloodGroup) newErrors.bloodGroup = "Blood Group is required";
+    // if (!data.dob) newErrors.dob = "Date of Birth is required";
+    // if (!data.employeeCategory)
+    //   if (!data.joiningDate) newErrors.joiningDate = "Joining Date is required";
+    // if (!data.employeeId) newErrors.employeeId = "Employee Id is required";
+    // if (!data.localAddress) newErrors.localAddress = "Address is required";
+    // if (!data.permCity) newErrors.permCity = "City is required";
+    // if (!data.permPincode) newErrors.permPincode = "Pincode is required";
+    // if (!data.maritalStatus)
+    //   newErrors.maritalStatus = "Marital Status is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -823,7 +824,7 @@ export default function Form() {
                               setBloodGroup(val);
                               clearError("bloodGroup");
                             }}
-                            required={true}
+                            // required={true}
                             readOnly={readOnly}
                             disabled={childRecord.current > 0}
                             className={errorClass("bloodGroup")}
@@ -843,7 +844,7 @@ export default function Form() {
                             setDob(val);
                             clearError("dob");
                           }}
-                          required
+                          // required
                           readOnly={readOnly}
                           disabled={childRecord.current > 0}
                           type={"date"}
@@ -978,7 +979,7 @@ export default function Form() {
                             setJoiningDate(val);
                             clearError("joiningDate");
                           }}
-                          required={true}
+                          // required={true}
                           readOnly={readOnly}
                           disabled={childRecord.current > 0}
                           type={"date"}
@@ -999,7 +1000,7 @@ export default function Form() {
                             clearError("employeeId");
                           }}
                           readOnly={readOnly}
-                          required={true}
+                          // required={true}
                           disabled={childRecord.current > 0}
                           className={errorClass("employeeId")}
                         />
@@ -1041,7 +1042,7 @@ export default function Form() {
                             setMaritalStatus(val);
                             clearError("maritalStatus");
                           }}
-                          required
+                          // required
                           readOnly={readOnly}
                           // disabled={childRecord.current > 0}
                           className={errorClass("maritalStatus")}
@@ -1191,7 +1192,7 @@ export default function Form() {
                             setlocalAddress(val);
                             clearError("localAddress");
                           }}
-                          required
+                          // required
                           readOnly={readOnly}
                           className={errorClass("localAddress")}
 
@@ -1216,7 +1217,7 @@ export default function Form() {
                             }}
                             readOnly={readOnly}
                             // disabled={childRecord.current > 0}
-                            required
+                            // required
                             className={errorClass("permPincode")}
                           />
                           {errors.permPincode && (
@@ -1243,7 +1244,7 @@ export default function Form() {
                               setPermCity(val);
                               clearError("permCity");
                             }}
-                            required={true}
+                            // required={true}
                             readOnly={readOnly}
                             className={`focus:ring-2 focus:ring-blue-100 ${errorClass("permCity")}`}
                             addNewLabel="+ Add New City"
