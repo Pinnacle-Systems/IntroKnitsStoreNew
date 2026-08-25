@@ -100,12 +100,10 @@ const ThermalSalesPrintFormat = ({
         <View style={styles.dottedLine} />
         <View style={tw('flex flex-row justify-between py-1')}>
           <Text style={tw('text-xxs font-bold w-[10%]')}>S.No</Text>
-          <Text style={tw('text-xxs font-bold w-[45%]')}>Item Group / Item </Text>
-          <Text style={tw('text-xxs font-bold w-[20%] text-right')}>Size / Color </Text>
-          {/* <Text style={tw('text-xxs font-bold w-[10%] text-right')}>Color</Text> */}
-          <Text style={tw('text-xxs font-bold w-[10%] text-right')}>Uom</Text>
+          <Text style={tw('text-xxs font-bold w-[45%]')}>Item</Text>
+          <Text style={tw('text-xxs font-bold w-[15%]')}>Size</Text>
+          <Text style={tw('text-xxs font-bold w-[15%]')}>Color</Text>
           <Text style={tw('text-xxs font-bold w-[15%] text-right')}>Qty</Text>
-
         </View>
         <View style={styles.dottedLine} />
 
@@ -123,20 +121,9 @@ const ThermalSalesPrintFormat = ({
             <View key={index} style={tw('flex flex-col mb-1')}>
               <View style={tw('flex flex-row justify-between')}>
                 <Text style={tw('text-xxs w-[10%]')}>{index + 1}</Text>
-                <Text style={tw('text-xxs w-[45%]')}>
-                  <View style={tw('flex flex-col ')}>
-                    <Text style={tw('text-xxs font-bold')}>{item?.Itemgroup?.name} /  </Text>
-                    <Text style={tw('text-xxs font-bold')}>{item?.Item?.name} </Text>
-                  </View>
-                </Text>
-                <Text style={tw('text-xxs w-[20%] text-right')}>
-                  <View style={tw('flex flex-col ')}>
-                    <Text style={tw('text-xxs font-bold')}>{item?.Size?.name} /  </Text>
-                    <Text style={tw('text-xxs font-bold')}>{item?.Color?.name} </Text>
-                  </View>
-                </Text>
-                <Text style={tw('text-xxs w-[10%] text-right')}>  {item?.Uom?.name}</Text>
-
+                <Text style={tw('text-xxs w-[45%] font-bold')}>{item?.Item?.name}</Text>
+                <Text style={tw('text-xxs w-[15%] font-bold')}>{item?.Size?.name}</Text>
+                <Text style={tw('text-xxs w-[15%] font-bold')}>{item?.Color?.name}</Text>
                 <Text style={tw('text-xxs w-[15%] text-right')}>{qty.toFixed(2)}</Text>
               </View>
             </View>

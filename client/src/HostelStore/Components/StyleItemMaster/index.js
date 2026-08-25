@@ -134,7 +134,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
   };
 
   const validateData = (data) => {
-    if (data.name && data.itemGroupId && data?.hsnId) {
+    if (data.name && data.itemGroupId) {
       return true;
     }
     return false;
@@ -395,7 +395,7 @@ export default function Form({ onSuccess, defaultName = "" }) {
                   childComponent={ItemGroup}
                   addNewModalWidth="w-[40%] h-[45%]"
                 />
-                <div className="mb-3">
+                {/* <div className="mb-3">
                   <DropdownWithModal
                     name="Hsn"
                     options={dropDownListObject(
@@ -413,9 +413,9 @@ export default function Form({ onSuccess, defaultName = "" }) {
                     addNewLabel="+ Add New Hsn"
                     childComponent={HsnMaster}
                     addNewModalWidth="w-[40%] h-[50%]"
-                    required={true}
+                  // required={true}
                   />
-                </div>
+                </div> */}
 
 
 
