@@ -385,12 +385,10 @@ export default function Form({
     let newErrors = {};
 
     if (!data.name) newErrors.name = "Name is required";
-    if (!data.partyCode) newErrors.partyCode = "Party Code is required";
     if (data.active === undefined || data.active === null)
       newErrors.active = "Active Status is required";
     if (!data.address) newErrors.address = "Address is required";
     if (!data.city) newErrors.city = "City is required";
-    if (!data.pincode) newErrors.pincode = "Pincode is required";
 
     setErrors(newErrors);
 
@@ -844,7 +842,7 @@ export default function Form({
   };
 
   const production = (value) => {
-    console.log(value,"value")
+    console.log(value, "value")
     setInhouse(value == "IN")
     setOutside(value == "OUT")
   }
@@ -1204,7 +1202,6 @@ export default function Form({
                             name="Pincode"
                             type="number"
                             value={pincode}
-                            required={true}
                             setValue={setPincode}
                             readOnly={readOnly}
                             disabled={childRecord.current > 0}
@@ -1795,7 +1792,6 @@ export default function Form({
                   name="Code"
                   type="text"
                   value={partyCode}
-                  required={true}
                   setValue={(val) => {
                     setPartyCode(val);
                     clearError("partyCode");
@@ -1936,7 +1932,6 @@ export default function Form({
                       name="Pincode/Zip Code"
                       type="pincode"
                       value={pincode}
-                      required={true}
                       setValue={(val) => {
                         setPincode(val);
                         clearError("pincode");
