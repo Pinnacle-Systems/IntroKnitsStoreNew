@@ -380,7 +380,7 @@ const InwardItems = ({
                 {(inwardType === "Direct Inward" ||
                   receiptType === "Against Invoice") && (
                     <th className={`w-16 px-4 py-2 text-center font-medium `}>
-                      Price
+                      Price <span className="text-red-500">*</span>
                     </th>
                   )}
                 {receiptType === "Against Invoice" && (

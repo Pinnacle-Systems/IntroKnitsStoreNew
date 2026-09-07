@@ -396,7 +396,7 @@ const PurchaseInwardForm = ({
 
 
       {
-        condition: !isGridDatasValid(data?.inwardItems, false, ["itemGroupId", "itemId", "uomId", "inwardQty"]),
+        condition: !isGridDatasValid(data?.inwardItems, false, ["itemGroupId", "itemId", "uomId", "inwardQty", "price"]),
         title: "Please fill all required item fields!",
       },
 
@@ -444,7 +444,7 @@ const PurchaseInwardForm = ({
   const totals = enrichedItems?.totals || {};
 
   const saveData = (nextProcess) => {
-    console.log(isGridDatasValid(data?.inwardItems, false, ["itemGroupId", "itemId", "colorId", "sizeId", "uomId", "inwardQty"]), "inwardItemss")
+    console.log(isGridDatasValid(data?.inwardItems, false, ["itemGroupId", "itemId", "colorId", "sizeId", "uomId", "inwardQty", "price"]), "inwardItemss")
     if (!validateData(data)) {
       return;
     }
