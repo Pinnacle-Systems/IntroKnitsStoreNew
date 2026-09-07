@@ -235,7 +235,7 @@ async function get(req) {
       },
     },
 
-    orderBy: { docId: "desc" },
+    orderBy: { id: "desc" },
   });
 
   let totalCount = data.length;
@@ -380,9 +380,9 @@ async function calculateLIFOIssuedStock(tx, materialIssueItemsId) {
   if (!materialIssueItemsId) return [];
 
   const outStocks = await tx.stock.findMany({
-    where: { 
+    where: {
       materialIssueItemsId: parseInt(materialIssueItemsId),
-      inOrOut: "Out" 
+      inOrOut: "Out"
     },
     orderBy: { createdAt: "desc" }
   });
@@ -391,7 +391,7 @@ async function calculateLIFOIssuedStock(tx, materialIssueItemsId) {
     where: { materialIssueItemsId: parseInt(materialIssueItemsId) },
     select: { id: true }
   });
-  
+
   let totalReturnedQty = 0;
   if (existingReturns.length > 0) {
     const returnIds = existingReturns.map(r => r.id);
@@ -405,10 +405,10 @@ async function calculateLIFOIssuedStock(tx, materialIssueItemsId) {
   }
 
   const outBatches = [];
-  
+
   for (const stock of outStocks) {
     let outQty = Math.abs(stock.qty || 0);
-    
+
     if (totalReturnedQty >= outQty) {
       totalReturnedQty -= outQty;
       outBatches.push({ ...stock, availableToReturn: 0 });
@@ -443,7 +443,7 @@ async function createReturnItems(
 
     const issueItemsId = stockDetail?.materialIssueItemsId || stockDetail?.id;
     const reversibleBatches = issueItemsId ? await calculateLIFOIssuedStock(tx, issueItemsId) : [];
-    
+
     const firstBatchPrice = reversibleBatches.length > 0 && reversibleBatches[0].price ? reversibleBatches[0].price : (stockDetail?.price ? stockDetail.price : null);
 
     const createdItem = await tx.MaterialReturnItems.create({

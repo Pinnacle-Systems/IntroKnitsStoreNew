@@ -247,7 +247,7 @@ async function get(req) {
 
 
     },
-    orderBy: { docId: "desc" },
+    orderBy: { id: "desc" },
   });
 
   let totalCount = data.length;

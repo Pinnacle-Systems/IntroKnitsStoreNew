@@ -48,6 +48,7 @@ const MaterialReturnFormReport = ({
   const [searchProjectValue, setSearchProjectValue] = useState("");
   const [searchFollowedBy, setSearchFollowedBy] = useState("");
   const dispatch = useDispatch();
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleOnclick = (e) => {
     setCurrentPageNumber(reactPaginateIndexToPageNumber(e.selected));
@@ -86,8 +87,8 @@ const MaterialReturnFormReport = ({
       branchId,
       ...searchFields,
       pagination: true,
-      dataPerPage,
-      pageNumber: currentPageNumber,
+      dataPerPage: itemsPerPage,
+      pageNumber: currentPage,
     },
   });
 
@@ -99,11 +100,11 @@ const MaterialReturnFormReport = ({
 
   const isLoadingIndicator = isLoading || isFetching;
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math?.ceil(allData?.data?.length / itemsPerPage);
-  const indexOfLastItem = currentPage * parseInt(15);
+  const totalPages = Math?.ceil((allData?.totalCount || 0) / parseInt(itemsPerPage));
+  // const indexOfFirstItem = 0;
+  const indexOfLastItem = Math.min(currentPage * parseInt(itemsPerPage), allData?.totalCount || 0);
+  // const currentItems = allData?.data?.slice(indexOfFirstItem, indexOfLastItem);
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = allData?.data?.slice(indexOfFirstItem, indexOfLastItem);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -117,8 +118,8 @@ const MaterialReturnFormReport = ({
       <div className="h-10 w-full flex flex-col sm:flex-row justify-between items-center p-2 bg-white border-t border-gray-200 ">
         <div className="text-sm text-gray-600 mb-2 sm:mb-0">
           Showing {indexOfFirstItem + 1} to{" "}
-          {Math.min(indexOfLastItem, allData?.data?.length)} of{" "}
-          {allData?.length} entries
+          {Math.min(indexOfLastItem, allData?.totalCount || 0)} of{" "}
+          {allData?.totalCount || 0} entries
         </div>
         <div className="flex gap-1">
           <button
